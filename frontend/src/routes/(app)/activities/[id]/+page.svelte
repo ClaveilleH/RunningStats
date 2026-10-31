@@ -213,7 +213,10 @@
 	<div class="title-row">
 		<div class="title">
 			<a href={resolve('/(app)/activities')} class="back">← Activités</a>
-			<h1 class="display">{a.name ?? 'Sortie'}</h1>
+			<div class="name-row">
+				<h1 class="display">{a.name ?? 'Sortie'}</h1>
+				{#if a.race}<span class="race-badge" title={a.race.name}>Course</span>{/if}
+			</div>
 			<p class="muted">{meta}</p>
 		</div>
 		<div class="actions">
@@ -509,8 +512,28 @@
 		text-decoration: none;
 	}
 
+	.name-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex-wrap: wrap;
+		margin-top: 4px;
+	}
+
+	.race-badge {
+		padding: 2px 10px;
+		border-radius: 3px;
+		background: var(--accent);
+		color: var(--on-accent);
+		font-family: var(--font-display);
+		font-size: 16px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
 	h1 {
-		margin: 4px 0 0;
+		margin: 0;
 		font-weight: 800;
 		font-size: 44px;
 		line-height: 1;

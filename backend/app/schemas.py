@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import Annotated, Any
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, HttpUrl
 from pydantic_core import PydanticCustomError
 
 from app.models import GarminSource, GarminStatus, JobStatus, Role
@@ -101,6 +101,11 @@ class JobStartedOut(BaseModel):
     job_id: int
 
 
+class RaceRefOut(BaseModel):
+    id: int
+    name: str
+
+
 class ActivityItemOut(BaseModel):
     """Une ligne de la liste des activités."""
 
@@ -120,6 +125,8 @@ class ActivityItemOut(BaseModel):
     pinned: bool
     # Tracé simplifié [lat, lon] pour la vue cartes (si demandé).
     track: list[list[float]] | None = None
+    # Course reliée (sortie du jour J), pour le badge « Course ».
+    race: "RaceRefOut | None" = None
 
 
 class ActivitySummaryOut(BaseModel):
@@ -217,3 +224,42 @@ class ReadinessOut(BaseModel):
     resting_hr_delta: int | None
     body_battery_max: int | None
     trace: dict[str, Any]
+
+
+class RaceIn(BaseModel):
+    """Ajout ou modification d'une course."""
+
+    name: str = Field(min_length=1, max_length=120)
+    date: date
+    start_time: time | None = None
+    location: str | None = Field(default=None, max_length=120)
+    distance_m: float = Field(gt=0, le=500_000)
+    elevation_gain_m: float = Field(default=0, ge=0, le=30_000)
+    official_url: HttpUrl | None = None
+
+
+class RaceParticipantOut(BaseModel):
+    user_id: int
+    display_name: str
+    avatar_color: str | None
+    joined_at: datetime
+    # Sortie du jour J, seulement pour soi (celles des amis attendent la confidentialité).
+    activity_id: int | None = None
+
+
+class RaceOut(BaseModel):
+    id: int
+    name: str
+    date: date
+    start_time: time | None
+    location: str | None
+    distance_m: float
+    elevation_gain_m: float
+    category: str
+    km_effort: float
+    official_url: str | None
+    created_by: int | None
+    created_by_name: str | None
+    can_edit: bool
+    joined: bool
+    participants: list[RaceParticipantOut]

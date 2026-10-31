@@ -94,3 +94,13 @@ export function eveningBefore(wakeDate: string): string {
 	d.setDate(d.getDate() - 1);
 	return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
 }
+
+/** « samedi 7 novembre 2026 ». */
+export function formatLongDate(isoDate: string): string {
+	return new Date(`${isoDate}T00:00:00`).toLocaleDateString('fr-FR', {
+		weekday: 'long',
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	});
+}

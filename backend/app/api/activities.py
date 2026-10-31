@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query
 
-from app import activity_detail, activity_list, readiness
+from app import activity_detail, activity_list, races, readiness
 from app.activity_list import Filters, SortKey
 from app.api.deps import CurrentUser, DbSession
 from app.models import Activity, LapKind
@@ -14,6 +14,7 @@ from app.schemas import (
     ActivityOut,
     ActivityPointsOut,
     ActivitySummaryOut,
+    RaceRefOut,
     ReadinessOut,
     SplitOut,
     WeekOut,
@@ -25,7 +26,9 @@ activity_router = APIRouter(prefix="/activities", tags=["activities"])
 Category = Literal["road", "short_trail", "long_trail", "mixed"]
 
 
-def _item(activity: Activity, track: list[list[float]] | None) -> ActivityItemOut:
+def _item(
+    activity: Activity, track: list[list[float]] | None, race: dict | None = None
+) -> ActivityItemOut:
     pace = None
     if activity.distance_m and activity.duration_s and activity.distance_m > 0:
         pace = activity.duration_s / (activity.distance_m / 1000)
@@ -44,6 +47,7 @@ def _item(activity: Activity, track: list[list[float]] | None) -> ActivityItemOu
         pace_s_per_km=pace,
         pinned=activity.pinned,
         track=track,
+        race=RaceRefOut.model_validate(race) if race else None,
     )
 
 
@@ -67,9 +71,13 @@ def list_activities(
     filters = Filters(category=category, q=q, date_from=date_from, date_to=date_to)
     totals = activity_list.summary(db, member.id, filters)
     activities = activity_list.page(db, member.id, filters, sort, order == "desc", page, page_size)
-    tracks = activity_list.track_previews(db, [a.id for a in activities]) if with_track else {}
+    ids = [a.id for a in activities]
+    tracks = activity_list.track_previews(db, ids) if with_track else {}
+    linked = races.races_of_activities(db, ids)
     return ActivityListOut(
-        items=[_item(a, tracks.get(a.id) if with_track else None) for a in activities],
+        items=[
+            _item(a, tracks.get(a.id) if with_track else None, linked.get(a.id)) for a in activities
+        ],
         total=int(totals["count"]),
         page=page,
         page_size=page_size,
@@ -93,7 +101,7 @@ def weekly_activities(
 def get_activity(activity_id: int, viewer: CurrentUser, db: DbSession) -> ActivityOut:
     """Résumé, splits par km, tours de la montre, zones FC et détails."""
     activity = activity_detail.activity_for(db, viewer, activity_id)
-    item = _item(activity, None)
+    item = _item(activity, None, races.races_of_activities(db, [activity.id]).get(activity.id))
     return ActivityOut(
         **item.model_dump(),
         user_id=activity.user_id,

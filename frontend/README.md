@@ -32,6 +32,8 @@ frontend/
 │   │   ├── garmin.svelte.ts     état Garmin du membre et suivi de la synchro (GarminSync)
 │   │   ├── format.ts            nombres, distances, durées, allures et dates en français
 │   │   ├── activities.ts        types et libellés des activités, périodes, vignette du tracé
+│   │   ├── races.ts             types des courses, compte à rebours
+│   │   ├── avatar.ts            initiales et couleur d'un membre
 │   │   └── components/          composants partagés (Brand, SyncButton, RouteMap, DistanceChart…)
 │   └── routes/
 │       ├── +layout.ts           ssr = false, prerender = false (mode SPA)
@@ -40,6 +42,7 @@ frontend/
 │       └── (app)/               pages réservées aux membres ; +layout.ts redirige vers /login sinon
 │           ├── activities/      liste des activités (filtres, résumé, graphique, tableau / cartes)
 │           │   └── [id]/        fiche d'une activité (carte, profil, onglets)
+│           ├── races/           courses à venir (liste, calendrier, passées), new/ et [id]/edit/
 │           └── settings/        Réglages (pour l'instant : Garmin et données)
 ├── static/
 ├── vite.config.ts               config Vite et SvelteKit (adapter, proxy)
@@ -72,6 +75,16 @@ frontend/
   - Chaque courbe a sa propre échelle, sans les 2 % de valeurs extrêmes, pour qu'un arrêt ne l'écrase pas.
   - Onglets : Résumé (grands chiffres, et « Forme avant la sortie » via `ReadinessCard`), Statistiques (splits par km ou par tour de la montre, zones FC de Garmin, détails), Graphiques (allure, FC, altitude, cadence).
 - **Pas encore là** : filtre par personne (attend la confidentialité), filtre entraînements / courses officielles et badge « Course » (attendent les courses), colonne « Analyse IA » (attend l'IA). Sur la fiche : analyse IA, résultat et découpage par segments de course, GAP (attend la courbe allure-pente de la prédiction), et partage.
+
+## Courses
+
+- **Liste** (`/races`) : compte à rebours J-, infos, inscrits et bouton « Rejoindre » / « J'y vais ». Les filtres (inscription, type, horizon) s'appliquent dans la page : la liste du groupe est courte.
+- **Calendrier** : du mois en cours au mois de la dernière course affichée (3 à 12 mois). Une course où je vais est pleine, une course du groupe est entourée.
+- **Courses passées** : repliées, chargées à l'ouverture, avec un lien vers ma sortie du jour J si elle a été reliée.
+- **Formulaire** (`RaceForm`, sans maquette) : nom, date, heure, lieu, distance en km (virgule acceptée), D+ et site officiel. Le type est calculé par le back.
+- **Pas encore là** :
+  - la fiche d'une course : GPX, ravitos, barrières, entraînement (prochaine étape) ;
+  - la jauge de préparation : la maquette l'affiche, mais la doc ne la définit pas.
 
 ## Conventions
 

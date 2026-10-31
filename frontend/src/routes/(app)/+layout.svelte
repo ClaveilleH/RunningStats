@@ -24,7 +24,7 @@
 	}
 </script>
 
-<!-- Les autres entrées (Courses, Amis) arrivent avec leurs pages. -->
+<!-- L'entrée Amis arrive avec sa page. -->
 <header>
 	<Brand />
 	<nav aria-label="Navigation principale">
@@ -35,6 +35,10 @@
 			href={resolve('/(app)/activities')}
 			aria-current={page.route.id?.startsWith('/(app)/activities') ? 'page' : undefined}
 			>Activités</a
+		>
+		<a
+			href={resolve('/(app)/races')}
+			aria-current={page.route.id?.startsWith('/(app)/races') ? 'page' : undefined}>Courses</a
 		>
 	</nav>
 	<div class="right">

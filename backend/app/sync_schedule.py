@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import jobs, settings
+from app import jobs, races, settings
 from app.config import get_settings
 from app.models import GarminAccount, GarminStatus, Job, User
 from app.settings import SyncSchedule
@@ -22,8 +22,8 @@ def in_night_pause(local: datetime, rules: SyncSchedule) -> bool:
 
 
 def is_race_day(db: Session, user_id: int, local: datetime) -> bool:
-    """Le membre est inscrit à une course aujourd'hui. Les courses n'existent pas encore."""
-    return False
+    """Le membre est inscrit à une course aujourd'hui (synchro plus fréquente)."""
+    return races.is_race_day(db, user_id, local.date())
 
 
 def due_user_ids(db: Session, now: datetime) -> list[int]:

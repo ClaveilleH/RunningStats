@@ -262,6 +262,7 @@
 								<a class="name" href={resolve('/(app)/activities/[id]', { id: String(a.id) })}
 									>{a.name ?? 'Sortie'}</a
 								>
+								{#if a.race}<span class="race-badge" title={a.race.name}>Course</span>{/if}
 								{#if a.location_name}<span class="muted small"> · {a.location_name}</span>{/if}
 							</td>
 							<td><span class="tag">{categoryLabel(a.category)}</span></td>
@@ -285,6 +286,7 @@
 						>
 						<div class="muted small">
 							{formatDay(a.start_time_local)} · {categoryLabel(a.category)}
+							{#if a.race}<span class="race-badge" title={a.race.name}>Course</span>{/if}
 						</div>
 					</div>
 					<svg viewBox="0 0 280 90" class="track" aria-hidden="true">
@@ -637,6 +639,19 @@
 
 	.name {
 		font-weight: 700;
+	}
+
+	.race-badge {
+		margin-left: 6px;
+		padding: 1px 7px;
+		border-radius: 3px;
+		background: var(--accent);
+		color: var(--on-accent);
+		font-family: var(--font-display);
+		font-size: 13px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	.tag {

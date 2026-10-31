@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import activities, fit, garmin, metrics
+from app import activities, fit, garmin, metrics, races
 from app.jobs import GARMIN_RETRY_DELAYS, RetryableError, enqueue, enqueue_unless_queued, task
 from app.models import Activity, GarminAccount, GarminStatus, Job
 from app.security import utcnow
@@ -121,4 +121,7 @@ def process_activity(db: Session, job: Job) -> None:
     activities.store_fit_data(db, activity, parsed)
     db.flush()
     metrics.compute(db, activity)
+    race = races.link_activity(db, activity)
+    if race is not None:
+        log.info("Activité %s reliée à la course %s", activity.id, race.id)
     log.info("Activité %s : %s points, %s tours", activity.id, len(parsed.points), len(parsed.laps))

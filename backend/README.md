@@ -88,7 +88,7 @@ backend/
 - **Déclenchement** :
   - à l'enregistrement de la clé (`PUT /api/me/garmin` renvoie `sync_job_id`) ;
   - par le bouton (`POST /api/me/sync`, réponse 202 avec l'id de la tâche) ;
-  - **automatiquement** : toutes les 5 min, le worker regarde quels membres sont dus (`app/sync_schedule.py`). Un membre est dû quand sa fréquence est écoulée (la sienne ou celle du groupe, 1 h par défaut) depuis sa dernière synchro réussie **ou** lancée : une synchro qui échoue n'est donc pas relancée toutes les 5 min. Rien pendant la pause de nuit (0 h – 6 h, fuseau du groupe). Les comptes en statut `error` ou `key_expired` sont suspendus. Le passage à 10 min les jours de course attend les tables des courses.
+  - **automatiquement** : toutes les 5 min, le worker regarde quels membres sont dus (`app/sync_schedule.py`). Un membre est dû quand sa fréquence est écoulée (la sienne ou celle du groupe, 1 h par défaut) depuis sa dernière synchro réussie **ou** lancée : une synchro qui échoue n'est donc pas relancée toutes les 5 min. Rien pendant la pause de nuit (0 h – 6 h, fuseau du groupe). Les comptes en statut `error` ou `key_expired` sont suspendus. Les jours de course, la synchro des inscrits passe à 10 min (voir Courses).
 - **Clés qui expirent** : la tâche `check_garmin_keys` (chaque jour à 7 h) passe les clés expirées en `key_expired`. La ligne dans le journal admin viendra avec `audit_log`.
 - **Retraitement sans Garmin** : `process_activity` avec `use_local_fit: true` relit le FIT gardé sur disque.
 
@@ -128,6 +128,19 @@ Lancés à la fin de `process_activity`, et pour toutes les activités par la t�
   - Réglage `readiness` (poids des nuits, jours de référence de la FC au repos), modifiable par l'admin. La réponse garde la trace du calcul (`trace` : méthode, version, paramètres, entrées).
 - `PUT` / `DELETE /api/activities/{id}/pin` : épingle ou désépingle la sortie sur le profil.
 - L'activité d'un autre membre répond 404, comme si elle n'existait pas, en attendant la confidentialité.
+
+## Courses (`app/races.py`)
+
+- **Tables** : `races` (nom, date et heure locales, lieu, distance, D+, catégorie et km-effort calculés comme pour une activité, lien officiel, auteur) et `race_participants` (« J'y vais », avec la sortie du jour J). Les points de passage et le GPX viendront avec la fiche de course.
+- **Routes** :
+  - `GET /api/races` : à venir, aujourd'hui compris, de la plus proche à la plus lointaine. `past=true` donne les passées, de la plus récente à la plus ancienne. Filtres `from`, `to`, `category`.
+  - `POST /api/races` ; `PUT` et `DELETE /api/races/{id}`, réservés à l'auteur ou à l'admin (la doc ne le précise que pour la suppression).
+  - `POST` / `DELETE /api/races/{id}/participation` : « J'y vais » / ne plus y aller.
+- **Lien avec la sortie du jour J** : une sortie du membre inscrit, le jour de la course, à ± 15 % de sa distance (réglage `race_linking`). On garde la plus proche en distance.
+  - Le lien se fait dans `process_activity`, quand on s'inscrit à une course déjà passée, et à nouveau quand la course est modifiée.
+  - Les listes et la fiche d'activité renvoient `race` pour le badge « Course ».
+- **Jour de course** : `sync_schedule.is_race_day` regarde les inscriptions du jour, et la synchro passe à 10 min pour les inscrits.
+- La sortie du jour J n'est renvoyée que pour soi. Celles des amis attendent la confidentialité.
 
 ## Réglages du groupe (`app/settings.py`)
 

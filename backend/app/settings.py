@@ -67,9 +67,17 @@ class Readiness(SettingModel):
         return self
 
 
+class RaceLinking(SettingModel):
+    """Lien entre une course et la sortie du jour J (doc « Besoins du back », pipeline)."""
+
+    key: str = "race_linking"
+    # Écart de distance accepté entre la sortie et la course (%).
+    distance_tolerance_pct: float = Field(default=15, gt=0, le=100)
+
+
 REGISTRY: dict[str, type[SettingModel]] = {
     model.model_fields["key"].default: model
-    for model in (ActivityCategories, SyncSchedule, Readiness)
+    for model in (ActivityCategories, SyncSchedule, Readiness, RaceLinking)
 }
 
 

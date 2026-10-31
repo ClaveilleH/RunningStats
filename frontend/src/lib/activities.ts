@@ -26,6 +26,8 @@ export interface ActivityItem {
 	pace_s_per_km: number | null;
 	pinned: boolean;
 	track: [number, number][] | null;
+	// Course reliée (sortie du jour J).
+	race: { id: number; name: string } | null;
 }
 
 export interface ActivityList {

@@ -6,6 +6,7 @@ from app.models.garmin import GarminAccount, GarminSource, GarminStatus
 from app.models.health import DailyHealth, SleepNight, Weight
 from app.models.invitation import Invitation
 from app.models.job import Job, JobStatus
+from app.models.race import Race, RaceParticipant
 from app.models.session import UserSession
 from app.models.user import Role, User
 
@@ -24,6 +25,8 @@ __all__ = [
     "Invitation",
     "Job",
     "JobStatus",
+    "Race",
+    "RaceParticipant",
     "Role",
     "User",
     "UserSession",
