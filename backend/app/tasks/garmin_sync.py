@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import activities, fit, garmin
+from app import activities, fit, garmin, metrics
 from app.jobs import GARMIN_RETRY_DELAYS, RetryableError, enqueue, task
 from app.models import Activity, GarminAccount, GarminStatus, Job
 from app.security import utcnow
@@ -97,18 +97,26 @@ def garmin_sync(db: Session, job: Job) -> None:
 
 @task("process_activity", retry_delays=GARMIN_RETRY_DELAYS)
 def process_activity(db: Session, job: Job) -> None:
-    """Télécharge le FIT, le garde brut et en extrait les points et les tours."""
+    """Télécharge le FIT, le garde brut et en extrait les points et les tours.
+
+    Avec use_local_fit, relit le FIT déjà gardé sur disque au lieu de le retélécharger.
+    """
     activity = db.get(Activity, job.params["activity_id"])
     if activity is None:
         return
-    account = _account(db, activity.user_id)
-    if account is None:
-        log.info("Activité %s non traitée : plus de clé Garmin", activity.id)
-        return
-
-    with garmin_errors(db):
-        content = garmin.call(db, account, lambda c: c.download_activity(activity.garmin_id))
-    activities.save_raw_fit(activity, content)
+    local = activities.read_raw_fit(activity) if job.params.get("use_local_fit") else None
+    if local is not None:
+        content = local
+    else:
+        account = _account(db, activity.user_id)
+        if account is None:
+            log.info("Activité %s non traitée : plus de clé Garmin", activity.id)
+            return
+        with garmin_errors(db):
+            content = garmin.call(db, account, lambda c: c.download_activity(activity.garmin_id))
+        activities.save_raw_fit(activity, content)
     parsed = fit.parse(content)
     activities.store_fit_data(db, activity, parsed)
+    db.flush()
+    metrics.compute(db, activity)
     log.info("Activité %s : %s points, %s tours", activity.id, len(parsed.points), len(parsed.laps))

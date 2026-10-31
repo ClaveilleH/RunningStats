@@ -1,6 +1,7 @@
 """Tous les modèles, importés ici pour qu'Alembic les voie."""
 
 from app.models.activity import Activity, ActivityLap, ActivityPoint, LapKind
+from app.models.app_setting import AppSetting
 from app.models.garmin import GarminAccount, GarminSource, GarminStatus
 from app.models.invitation import Invitation
 from app.models.job import Job, JobStatus
@@ -12,6 +13,7 @@ __all__ = [
     "ActivityLap",
     "ActivityPoint",
     "LapKind",
+    "AppSetting",
     "GarminAccount",
     "GarminSource",
     "GarminStatus",

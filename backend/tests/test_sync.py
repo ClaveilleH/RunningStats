@@ -92,6 +92,14 @@ def test_parse_fit() -> None:
     ]
 
 
+def test_parse_fit_excludes_pauses_from_timer() -> None:
+    parsed = fit.parse(build_fit(points=11, pause_after=4, pause_s=60))
+    times = [(p["t_s"], p["timer_s"]) for p in parsed.points]
+    assert times[4] == (4.0, 4.0)  # point au moment de l'arrêt du chrono
+    assert times[5] == (65.0, 5.0)  # premier point après la reprise
+    assert times[-1] == (70.0, 10.0)
+
+
 def test_parse_accepts_bare_fit_and_rejects_garbage() -> None:
     assert len(fit.parse(build_fit(points=3, zipped=False)).points) == 3
     with pytest.raises(ValueError):
@@ -150,17 +158,20 @@ def test_process_activity_stores_points_laps_and_raw_fit(
     activity = db.scalar(select(Activity))
     assert activity is not None
     assert activity.processed_at is not None
+    # Les métriques sont calculées dans la foulée.
+    assert activity.category is not None and activity.km_effort is not None
     assert activity.fit_path == f"fit/{admin.id}/7.zip"
     assert (get_settings().data_dir / activity.fit_path).read_bytes() == api.fits[7]
     assert count(db, ActivityPoint) == 11
-    assert count(db, ActivityLap) == 2
+    # 2 tours de la montre + 1 split (30 m, moins d'un km).
+    assert count(db, ActivityLap) == 3
 
     # Retraiter remplace les données au lieu de les dupliquer.
     jobs.enqueue(db, "process_activity", {"activity_id": activity.id}, user_id=admin.id)
     db.commit()
     run_all()
     assert count(db, ActivityPoint) == 11
-    assert count(db, ActivityLap) == 2
+    assert count(db, ActivityLap) == 3
 
 
 def test_next_sync_stops_at_first_known_activity(
@@ -280,3 +291,27 @@ def test_saving_a_key_starts_the_first_sync(
     response = admin_client.put("/api/me/garmin", json={"api_key": "key"})
     job = db.get(Job, response.json()["sync_job_id"])
     assert job is not None and job.type == "garmin_sync"
+
+
+def test_reprocess_from_local_fit_without_garmin(
+    db: Session, admin: User, account: GarminAccount, api: FakeGarminApi
+) -> None:
+    api.activities = [summary(7)]
+    sync(db, admin)
+    activity = db.scalar(select(Activity))
+    assert activity is not None
+    downloads = len(api.downloads)
+
+    db.delete(account)
+    db.commit()
+    jobs.enqueue(
+        db,
+        "process_activity",
+        {"activity_id": activity.id, "use_local_fit": True},
+        user_id=admin.id,
+    )
+    db.commit()
+    run_all()
+    assert len(api.downloads) == downloads
+    db.refresh(activity)
+    assert activity.calc_trace is not None

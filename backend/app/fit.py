@@ -47,10 +47,16 @@ def _cadence_spm(values: dict[str, Any]) -> int | None:
     return round((cadence + (values.get("fractional_cadence") or 0)) * 2)
 
 
+TIMER_STOPS = {"stop", "stop_all", "stop_disable", "stop_disable_all"}
+
+
 def parse(content: bytes) -> ParsedFit:
     parsed = ParsedFit()
     first_ts: datetime | None = None
     lap_start_distance = 0.0
+    # Pauses du chrono, lues dans les événements « timer » du FIT.
+    paused_since: datetime | None = None
+    paused_total = 0.0
     try:
         reader = fitdecode.FitReader(io.BytesIO(fit_bytes(content)))
         with reader:
@@ -58,13 +64,26 @@ def parse(content: bytes) -> ParsedFit:
                 if not isinstance(frame, fitdecode.FitDataMessage):
                     continue
                 values = {f.name: f.value for f in frame.fields if f.value is not None}
-                if frame.name == "record" and values.get("timestamp") is not None:
+                if frame.name == "event" and values.get("event") == "timer":
+                    ts, kind = values.get("timestamp"), values.get("event_type")
+                    if kind in TIMER_STOPS and paused_since is None:
+                        paused_since = ts
+                    elif kind == "start" and paused_since is not None and ts is not None:
+                        paused_total += (ts - paused_since).total_seconds()
+                        paused_since = None
+                elif frame.name == "record" and values.get("timestamp") is not None:
                     ts = values["timestamp"]
                     first_ts = first_ts or ts
+                    elapsed = (ts - first_ts).total_seconds()
+                    # Pendant une pause (souvent un point au moment de l'arrêt), le chrono est figé.
+                    paused_now = (
+                        max(0.0, (ts - paused_since).total_seconds()) if paused_since else 0.0
+                    )
                     parsed.points.append(
                         {
                             "seq": len(parsed.points),
-                            "t_s": (ts - first_ts).total_seconds(),
+                            "t_s": elapsed,
+                            "timer_s": elapsed - paused_total - paused_now,
                             "lat": _deg(values.get("position_lat")),
                             "lon": _deg(values.get("position_long")),
                             "altitude_m": _first(values, "enhanced_altitude", "altitude"),

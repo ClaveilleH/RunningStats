@@ -57,7 +57,8 @@ pnpm check && pnpm lint
 - Dates en **UTC** en base ; le fuseau local de l'activité est gardé à part.
 - Périmètre : types Garmin `running`, `trail_running` et `track_running` seulement (`trail_running` ajouté le 31/10/2026, absent de la doc du back). Tout le reste est ignoré, tapis (`treadmill_running`) compris.
 - Chaque valeur calculée garde sa trace : méthode, paramètres, version (sert au futur bouton « Explication »).
-- Seuils et réglages métier (route/trail, sommeil 50/30/20, règles de conseils…) vivent dans `app_settings`, jamais en dur dans le code.
+- Seuils et réglages métier (route/trail, sommeil 50/30/20, règles de conseils…) vivent dans `app_settings`, jamais en dur dans le code : un modèle Pydantic par réglage dans `backend/app/settings.py` (valeurs par défaut de la doc), lu avec `settings.get(db, Modele)`.
+- Durées d'allure : temps chrono (`timer_s`, sans les pauses), pas le temps écoulé (`t_s`).
 
 ### API
 - Toutes les routes sous `/api`. Session par cookie HttpOnly ; tout exige un membre connecté, `/api/admin/*` exige le rôle admin.

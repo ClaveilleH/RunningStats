@@ -48,9 +48,11 @@ class Activity(Base):
     # Secondes passées dans les zones FC 1 à 5, selon Garmin.
     hr_zones_s: Mapped[list[float] | None] = mapped_column(JSONB)
     location_name: Mapped[str | None] = mapped_column(String(200))
-    # Calculés à l'étape suivante (catégorie route / trail, km-effort) ; vides pour l'instant.
-    category: Mapped[str | None] = mapped_column(String(20))
+    # Calculés par app/metrics.py : road / short_trail / long_trail / mixed, et km + D+/100.
+    category: Mapped[str | None] = mapped_column(String(20), index=True)
     km_effort: Mapped[float | None] = mapped_column(Float)
+    # Trace des calculs (méthode, version, paramètres, entrées).
+    calc_trace: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     pinned: Mapped[bool] = mapped_column(Boolean, default=False)
     # Chemin du FIT brut, relatif à DATA_DIR.
     fit_path: Mapped[str | None] = mapped_column(String(300))
@@ -69,8 +71,10 @@ class ActivityPoint(Base):
         ForeignKey("activities.id", ondelete="CASCADE"), primary_key=True
     )
     seq: Mapped[int] = mapped_column(Integer, primary_key=True)
-    # Secondes depuis le premier point.
+    # Secondes depuis le premier point (temps écoulé, pauses comprises).
     t_s: Mapped[float] = mapped_column(Float)
+    # Temps chrono de la montre : t_s moins les pauses (auto-pause, arrêts du chrono).
+    timer_s: Mapped[float | None] = mapped_column(Float)
     lat: Mapped[float | None] = mapped_column(Float)
     lon: Mapped[float | None] = mapped_column(Float)
     altitude_m: Mapped[float | None] = mapped_column(Float)
@@ -83,7 +87,7 @@ class ActivityPoint(Base):
 
 class LapKind(enum.StrEnum):
     lap = "lap"  # tours enregistrés par la montre
-    km = "km"  # splits par km, calculés depuis les points (étape suivante)
+    km = "km"  # splits par km, calculés depuis les points (app/metrics.py)
 
 
 class ActivityLap(Base):

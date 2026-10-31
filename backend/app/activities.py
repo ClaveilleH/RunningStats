@@ -66,6 +66,13 @@ def save_raw_fit(activity: Activity, content: bytes) -> None:
     activity.fit_path = relative.as_posix()
 
 
+def read_raw_fit(activity: Activity) -> bytes | None:
+    if not activity.fit_path:
+        return None
+    path = get_settings().data_dir / activity.fit_path
+    return path.read_bytes() if path.exists() else None
+
+
 def store_fit_data(db: Session, activity: Activity, parsed: fit.ParsedFit) -> None:
     """Remplace les points et les tours de la montre par ceux du FIT."""
     db.execute(delete(ActivityPoint).where(ActivityPoint.activity_id == activity.id))

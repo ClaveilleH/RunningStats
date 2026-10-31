@@ -6,17 +6,36 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fit_tool.fit_file_builder import FitFileBuilder
+from fit_tool.profile.messages.event_message import EventMessage
 from fit_tool.profile.messages.file_id_message import FileIdMessage
 from fit_tool.profile.messages.lap_message import LapMessage
 from fit_tool.profile.messages.record_message import RecordMessage
-from fit_tool.profile.profile_type import FileType, Manufacturer
+from fit_tool.profile.profile_type import Event, EventType, FileType, Manufacturer
 from garmin_personal_api import HttpError
 
 START = datetime(2026, 10, 25, 8, 0, 0, tzinfo=UTC)
 
 
-def build_fit(points: int = 10, lap_every: int = 5, *, zipped: bool = True) -> bytes:
-    """FIT d'une sortie : 1 point par seconde, 3 m/s, +1 m d'altitude par point."""
+def _timer_event(timestamp: int, kind: EventType) -> EventMessage:
+    event = EventMessage()
+    event.timestamp = timestamp
+    event.event = Event.TIMER
+    event.event_type = kind
+    return event
+
+
+def build_fit(
+    points: int = 10,
+    lap_every: int = 5,
+    *,
+    zipped: bool = True,
+    pause_after: int | None = None,
+    pause_s: int = 0,
+) -> bytes:
+    """FIT d'une sortie : 1 point par seconde, 3 m/s, +1 m d'altitude par point.
+
+    pause_after / pause_s : chrono arrêté après ce point pendant pause_s secondes.
+    """
     t0 = int(START.timestamp() * 1000)
     builder = FitFileBuilder(auto_define=True)
     file_id = FileIdMessage()
@@ -24,9 +43,15 @@ def build_fit(points: int = 10, lap_every: int = 5, *, zipped: bool = True) -> b
     file_id.manufacturer = Manufacturer.DEVELOPMENT.value
     file_id.time_created = t0
     builder.add(file_id)
+    builder.add(_timer_event(t0, EventType.START))
+
+    def ts(i: int) -> int:
+        shift = pause_s if pause_after is not None and i > pause_after else 0
+        return t0 + (i + shift) * 1000
+
     for i in range(points):
         record = RecordMessage()
-        record.timestamp = t0 + i * 1000
+        record.timestamp = ts(i)
         record.position_lat = 45.0 + i * 1e-4
         record.position_long = 6.0
         record.altitude = 100.0 + i
@@ -35,6 +60,9 @@ def build_fit(points: int = 10, lap_every: int = 5, *, zipped: bool = True) -> b
         record.heart_rate = 140 + i
         record.cadence = 80
         builder.add(record)
+        if i == pause_after:
+            builder.add(_timer_event(ts(i), EventType.STOP_ALL))
+            builder.add(_timer_event(ts(i) + pause_s * 1000, EventType.START))
     for lap_start in range(0, points - 1, lap_every):
         lap_end = min(lap_start + lap_every, points - 1)
         lap = LapMessage()

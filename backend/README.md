@@ -67,7 +67,29 @@ backend/
   1. `garmin_sync` parcourt la liste des activités, des plus récentes aux plus anciennes, et ne garde que `running`, `trail_running` et `track_running`. Tant que l'historique n'a pas été lu en entier (`sync_cursor.history_complete`), elle lit toutes les pages. Ensuite, elle s'arrête à la première activité déjà connue. Chaque page est commitée, donc une synchro coupée reprend sans rien perdre.
   2. Chaque nouvelle activité met en file une tâche `process_activity`. Elle télécharge le FIT, le garde brut dans `DATA_DIR/fit/<membre>/<id Garmin>.zip`, puis enregistre les points (`activity_points`, environ 1 par seconde) et les tours de la montre (`activity_laps`, type `lap`).
 - **Déclenchement** : à l'enregistrement de la clé (`PUT /api/me/garmin` renvoie `sync_job_id`), ou par le bouton de synchro (`POST /api/me/sync`, réponse 202 avec l'id de la tâche). La synchro périodique viendra avec les réglages du groupe.
-- **Pas encore calculés** : la catégorie route / trail, le km-effort et les splits par km (prochaine étape).
+- **Retraitement sans Garmin** : `process_activity` avec `use_local_fit: true` relit le FIT gardé sur disque.
+
+## Calculs sur les activités (`app/metrics.py`)
+
+Lancés à la fin de `process_activity`, et pour toutes les activités par la tâche `recompute_metrics` (mise en file automatiquement quand l'admin change les seuils).
+
+- **Catégorie** (`road`, `short_trail`, `long_trail`, `mixed`), d'après le type Garmin et le D+ par km :
+  - piste : route ;
+  - D+/km au-dessus du seuil trail : trail ;
+  - D+/km sous le seuil route : route ;
+  - entre les deux : mixte.
+  - Une sortie marquée « trail » sur la montre passe d'un cran vers le trail : vallonnée, elle compte comme trail ; plate, elle compte comme mixte.
+  - Un trail est long à partir d'un certain km-effort.
+- **km-effort** : km + D+ / 100.
+- **Splits par km** (`activity_laps`, type `km`) : bornes interpolées entre deux points, durée en **temps chrono** (sans les pauses lues dans les événements `timer` du FIT). Le D+ / D- suit le profil d'altitude du FIT (seuil de 1 m), puis il est mis à l'échelle pour que le total égale le D+ / D- officiel de Garmin.
+- **Trace** : `activities.calc_trace` garde la méthode, la version, les paramètres et les entrées de chaque calcul.
+
+## Réglages du groupe (`app/settings.py`)
+
+- Table `app_settings` : une ligne par réglage, avec une valeur JSON. Chaque réglage est un modèle Pydantic dont les valeurs par défaut viennent de la doc ; la base ne garde que ce que l'admin a changé.
+- `GET /api/admin/settings` renvoie tout, valeurs par défaut comprises. `PUT /api/admin/settings` modifie un réglage en partie, après validation (seuils dans le bon ordre, champs connus).
+- Réglage existant pour l'instant : `activity_categories` (route < 10 m/km, trail ≥ 25 m/km, trail long ≥ 42 km-effort).
+- À ne pas confondre avec `app/config.py`, qui contient la configuration technique lue dans l'environnement.
 - **Tests** : faux Garmin dans `tests/garmin_fakes.py` (liste d'activités, FIT synthétiques générés avec `fit-tool`, erreurs HTTP à la demande). Aucun appel réseau.
 
 ## Commandes
