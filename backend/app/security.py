@@ -9,7 +9,8 @@ _hasher = PasswordHasher()
 # Hash factice : vérifié quand l'email est inconnu, pour que la réponse prenne le même temps.
 _DUMMY_HASH = _hasher.hash("dummy-password")
 
-MIN_PASSWORD_LENGTH = 10
+# Seul endroit où se règle la longueur minimale ; le front la lit dans les réponses de l'API.
+MIN_PASSWORD_LENGTH = 8
 
 
 def hash_password(password: str) -> str:

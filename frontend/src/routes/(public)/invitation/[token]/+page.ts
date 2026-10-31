@@ -3,11 +3,16 @@ import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch, params }) => {
 	try {
-		const check = await api<{ valid: boolean; expires_at: string }>(
+		const check = await api<{ valid: boolean; expires_at: string; min_password_length: number }>(
 			`/auth/invitations/${encodeURIComponent(params.token)}`,
 			{ fetch }
 		);
-		return { token: params.token, valid: check.valid, problem: null };
+		return {
+			token: params.token,
+			valid: check.valid,
+			minPassword: check.min_password_length,
+			problem: null
+		};
 	} catch (e) {
 		const problem =
 			e instanceof ApiError && e.status === 404
@@ -15,6 +20,6 @@ export const load: PageLoad = async ({ fetch, params }) => {
 				: e instanceof ApiError
 					? e.message
 					: 'Impossible de vérifier le lien.';
-		return { token: params.token, valid: false, problem };
+		return { token: params.token, valid: false, minPassword: 0, problem };
 	}
 };

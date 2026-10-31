@@ -4,9 +4,10 @@
 	import { api, ApiError } from '#lib/api.ts';
 	import type { PageProps } from './$types';
 
-	const MIN_PASSWORD = 10;
-
 	let { data }: PageProps = $props();
+
+	// Longueur minimale fixée par le backend, reçue avec la vérification du lien.
+	const minPassword = $derived(data.minPassword);
 
 	let displayName = $state('');
 	let email = $state('');
@@ -18,8 +19,8 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		error = '';
-		if (password.length < MIN_PASSWORD) {
-			error = `Le mot de passe doit faire au moins ${MIN_PASSWORD} caractères.`;
+		if (password.length < minPassword) {
+			error = `Le mot de passe doit faire au moins ${minPassword} caractères.`;
 			return;
 		}
 		if (password !== confirm) {
@@ -85,12 +86,12 @@
 				class="input"
 				type="password"
 				autocomplete="new-password"
-				minlength={MIN_PASSWORD}
+				minlength={minPassword}
 				required
 				aria-describedby="password-hint"
 				bind:value={password}
 			/>
-			<span id="password-hint" class="hint">{MIN_PASSWORD} caractères minimum.</span>
+			<span id="password-hint" class="hint">{minPassword} caractères minimum.</span>
 		</div>
 		<div class="field">
 			<label for="confirm">Confirmer le mot de passe</label>

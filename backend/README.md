@@ -48,7 +48,7 @@ backend/
 - **Invitation** : l'admin crée un lien (`POST /api/admin/invitations`), valable 7 jours et utilisable une fois. Le groupe est limité à 5 membres, invitations en attente comprises.
 - **Session** : à la connexion, un jeton aléatoire est posé dans un cookie `HttpOnly`, `SameSite=Lax`, valable 30 jours. `Secure` s'active par `SESSION_COOKIE_SECURE=true` en production.
 - **Stockage** : la base ne garde que le hash SHA-256 des jetons (sessions et invitations), et les mots de passe en argon2. Une copie de la base ne permet donc pas d'ouvrir une session.
-- **Mot de passe** : 10 caractères minimum. Le changer déconnecte les autres appareils.
+- **Mot de passe** : 8 caractères minimum, réglé uniquement par `MIN_PASSWORD_LENGTH` dans `app/security.py` (le front lit la valeur dans les réponses de l'API). Le changer déconnecte les autres appareils.
 - **Dépendances de route** : `CurrentUser` (401 sans session) et `AdminUser` (403 si non admin), dans `app/api/deps.py`.
 
 ## Commandes

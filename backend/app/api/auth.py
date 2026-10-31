@@ -5,7 +5,7 @@ from app import accounts
 from app.api.deps import DbSession, clear_session_cookie, session_token, set_session_cookie
 from app.models import User
 from app.schemas import AcceptInvitationIn, InvitationCheckOut, LoginIn, MeOut
-from app.security import normalize_email, verify_password
+from app.security import MIN_PASSWORD_LENGTH, normalize_email, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -33,7 +33,9 @@ def logout(request: Request, response: Response, db: DbSession) -> None:
 @router.get("/invitations/{token}", response_model=InvitationCheckOut)
 def check_invitation(token: str, db: DbSession) -> InvitationCheckOut:
     invitation = accounts.get_valid_invitation(db, token)
-    return InvitationCheckOut(valid=True, expires_at=invitation.expires_at)
+    return InvitationCheckOut(
+        valid=True, expires_at=invitation.expires_at, min_password_length=MIN_PASSWORD_LENGTH
+    )
 
 
 @router.post("/invitations/{token}", response_model=MeOut, status_code=status.HTTP_201_CREATED)
