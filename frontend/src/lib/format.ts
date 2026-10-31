@@ -85,3 +85,12 @@ export function isoDate(date: Date): string {
 	const pad = (n: number) => String(n).padStart(2, '0');
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
+
+/**
+ * Nuit datée par Garmin du jour du réveil → soir du coucher, « ven. 23 » (comme la maquette).
+ */
+export function eveningBefore(wakeDate: string): string {
+	const d = new Date(`${wakeDate}T12:00:00`);
+	d.setDate(d.getDate() - 1);
+	return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+}

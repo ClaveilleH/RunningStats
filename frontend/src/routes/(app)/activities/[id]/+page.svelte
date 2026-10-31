@@ -9,6 +9,7 @@
 		type Split
 	} from '#lib/activities.ts';
 	import DistanceChart from '#lib/components/DistanceChart.svelte';
+	import ReadinessCard from '#lib/components/ReadinessCard.svelte';
 	import RouteMap from '#lib/components/RouteMap.svelte';
 	import { formatDuration, formatInt, formatKm, formatPace } from '#lib/format.ts';
 	import type { PageProps } from './$types';
@@ -288,7 +289,7 @@
 	</div>
 
 	{#if tab === 'summary'}
-		<div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary">
+		<div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" class="summary">
 			<dl class="panel big-numbers">
 				{#each bigNumbers as [label, value, unit] (label)}
 					<div>
@@ -299,6 +300,12 @@
 					</div>
 				{/each}
 			</dl>
+			<!-- L'analyse IA viendra à gauche (maquette), la forme reste dans la colonne de droite. -->
+			{#if data.readiness}
+				<div class="summary-side">
+					<ReadinessCard readiness={data.readiness} />
+				</div>
+			{/if}
 		</div>
 	{:else if tab === 'stats'}
 		<div id="panel-stats" role="tabpanel" aria-labelledby="tab-stats" class="stats">
@@ -676,6 +683,16 @@
 	.big-numbers dd span {
 		font-size: 19px;
 		color: var(--muted);
+	}
+
+	.summary {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.summary-side {
+		max-width: 440px;
 	}
 
 	.stats {

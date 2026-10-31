@@ -208,3 +208,14 @@ export function robustRange(values: (number | null)[]): [number, number] | null 
 	const cut = Math.floor(sorted.length * 0.02);
 	return [sorted[cut], sorted[sorted.length - 1 - cut]];
 }
+
+/** Forme avant la sortie (GET /api/activities/{id}/readiness). */
+export interface Readiness {
+	nights: { date: string; total_s: number | null; score: number | null; weight: number }[];
+	sleep_score: number | null;
+	resting_hr: number | null;
+	resting_hr_baseline: number | null;
+	resting_hr_delta: number | null;
+	body_battery_max: number | null;
+	trace: { params: { sleep_weights: number[]; resting_hr_baseline_days: number } };
+}

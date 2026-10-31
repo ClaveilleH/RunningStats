@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 from pydantic_core import PydanticCustomError
@@ -198,3 +198,22 @@ class ActivityPointsOut(BaseModel):
     hr: list[int | None]
     cadence_spm: list[int | None]
     pace_s_per_km: list[float | None]
+
+
+class ReadinessNightOut(BaseModel):
+    date: date  # jour du réveil
+    total_s: int | None
+    score: int | None
+    weight: float
+
+
+class ReadinessOut(BaseModel):
+    """Forme avant la sortie (GET /api/activities/{id}/readiness)."""
+
+    nights: list[ReadinessNightOut]  # de la veille à la plus ancienne
+    sleep_score: int | None
+    resting_hr: int | None
+    resting_hr_baseline: float | None
+    resting_hr_delta: int | None
+    body_battery_max: int | None
+    trace: dict[str, Any]

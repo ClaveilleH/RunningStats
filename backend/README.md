@@ -121,6 +121,11 @@ Lancés à la fin de `process_activity`, et pour toutes les activités par la t�
 - `GET /api/activities/{id}` : le résumé, les splits par km (`km_splits`), les tours de la montre (`laps`), les zones FC de Garmin, et des détails tirés du résumé Garmin (temps écoulé et arrêté, cadence, calories, altitude min / max). `processed` vaut faux tant que le FIT n'a pas été lu.
 - `GET /api/activities/{id}/points?step=25` : un point tous les `step` mètres (5 à 1 000), en colonnes (distance, temps chrono, lat / lon, altitude, FC, cadence, allure). Le dernier point est toujours gardé.
   - L'allure est le temps chrono sur ±100 m autour du point : les pauses n'y comptent pas. Au-delà de 30 min/km (arrêt, marche très lente), elle reste vide.
+- `GET /api/activities/{id}/readiness` : forme avant la sortie (`app/readiness.py`).
+  - Sommeil : scores Garmin des 3 nuits avant la sortie, pondérés 50 / 30 / 20 % de la veille à l'avant-avant-veille (doc « Prédiction et conseils », §6). Garmin date une nuit du jour du réveil : la veille d'une sortie du matin est la nuit du même jour, sauf si la sortie part avant la fin de cette nuit. Si une nuit manque, les poids des autres sont remis à l'échelle.
+  - FC au repos : celle du jour de la sortie, comparée à la moyenne des 7 jours d'avant. La doc ne fixe pas cette référence.
+  - Body Battery : le max du jour, atteint au réveil. Garmin ne donne pas la valeur à l'heure du départ.
+  - Réglage `readiness` (poids des nuits, jours de référence de la FC au repos), modifiable par l'admin. La réponse garde la trace du calcul (`trace` : méthode, version, paramètres, entrées).
 - `PUT` / `DELETE /api/activities/{id}/pin` : épingle ou désépingle la sortie sur le profil.
 - L'activité d'un autre membre répond 404, comme si elle n'existait pas, en attendant la confidentialité.
 

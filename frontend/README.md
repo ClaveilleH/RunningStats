@@ -70,8 +70,8 @@ frontend/
   - `RouteMap` dessine le tracé en SVG (même projection que les vignettes), avec le départ (damier), l'arrivée et un repère tous les 1, 5 ou 10 km selon la longueur.
   - `DistanceChart` est la zone commune au profil d'altitude et aux courbes. Le survol, ou les flèches du clavier, donne le point le plus proche, et ce point est partagé avec la carte.
   - Chaque courbe a sa propre échelle, sans les 2 % de valeurs extrêmes, pour qu'un arrêt ne l'écrase pas.
-  - Onglets : Résumé (grands chiffres), Statistiques (splits par km ou par tour de la montre, zones FC de Garmin, détails), Graphiques (allure, FC, altitude, cadence).
-- **Pas encore là** : filtre par personne (attend la confidentialité), filtre entraînements / courses officielles et badge « Course » (attendent les courses), colonne « Analyse IA » (attend l'IA). Sur la fiche : analyse IA, résultat et découpage par segments de course, GAP (attend la courbe allure-pente de la prédiction), « Forme avant la course » et partage.
+  - Onglets : Résumé (grands chiffres, et « Forme avant la sortie » via `ReadinessCard`), Statistiques (splits par km ou par tour de la montre, zones FC de Garmin, détails), Graphiques (allure, FC, altitude, cadence).
+- **Pas encore là** : filtre par personne (attend la confidentialité), filtre entraînements / courses officielles et badge « Course » (attendent les courses), colonne « Analyse IA » (attend l'IA). Sur la fiche : analyse IA, résultat et découpage par segments de course, GAP (attend la courbe allure-pente de la prédiction), et partage.
 
 ## Conventions
 

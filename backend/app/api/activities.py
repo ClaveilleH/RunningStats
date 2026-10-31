@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query
 
-from app import activity_detail, activity_list
+from app import activity_detail, activity_list, readiness
 from app.activity_list import Filters, SortKey
 from app.api.deps import CurrentUser, DbSession
 from app.models import Activity, LapKind
@@ -14,6 +14,7 @@ from app.schemas import (
     ActivityOut,
     ActivityPointsOut,
     ActivitySummaryOut,
+    ReadinessOut,
     SplitOut,
     WeekOut,
 )
@@ -122,6 +123,13 @@ def get_activity_points(
     """Points pour la carte, le profil et les courbes : un tous les `step` mètres."""
     activity = activity_detail.activity_for(db, viewer, activity_id)
     return ActivityPointsOut(step_m=step, **activity_detail.points(db, activity, step))
+
+
+@activity_router.get("/{activity_id}/readiness", response_model=ReadinessOut)
+def get_readiness(activity_id: int, viewer: CurrentUser, db: DbSession) -> ReadinessOut:
+    """Forme avant la sortie : sommeil des 3 nuits pondéré, FC au repos, Body Battery."""
+    activity = activity_detail.activity_for(db, viewer, activity_id)
+    return ReadinessOut.model_validate(readiness.compute(db, activity))
 
 
 @activity_router.put("/{activity_id}/pin", response_model=ActivityItemOut)

@@ -50,8 +50,26 @@ class SyncSchedule(SettingModel):
     race_day_interval_minutes: int = Field(default=10, ge=5, le=24 * 60)
 
 
+class Readiness(SettingModel):
+    """Forme avant une sortie (doc « Prédiction et conseils », §6, étape 3)."""
+
+    key: str = "readiness"
+    # Poids (%) des 3 nuits précédentes, de la veille à l'avant-avant-veille.
+    sleep_weights: list[float] = Field(default=[50, 30, 20], min_length=1, max_length=7)
+    # FC au repos du jour comparée à la moyenne des N jours d'avant.
+    # Valeur non fixée par la doc : 7 jours, comme la moyenne Garmin des Réglages.
+    resting_hr_baseline_days: int = Field(default=7, ge=1, le=60)
+
+    @model_validator(mode="after")
+    def weights_are_positive(self) -> "Readiness":
+        if any(w < 0 for w in self.sleep_weights) or sum(self.sleep_weights) <= 0:
+            raise ValueError("Les poids du sommeil doivent être positifs.")
+        return self
+
+
 REGISTRY: dict[str, type[SettingModel]] = {
-    model.model_fields["key"].default: model for model in (ActivityCategories, SyncSchedule)
+    model.model_fields["key"].default: model
+    for model in (ActivityCategories, SyncSchedule, Readiness)
 }
 
 
