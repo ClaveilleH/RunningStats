@@ -4,7 +4,7 @@ from typing import Annotated
 from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 from pydantic_core import PydanticCustomError
 
-from app.models import GarminSource, GarminStatus, Role
+from app.models import GarminSource, GarminStatus, JobStatus, Role
 from app.security import MIN_PASSWORD_LENGTH
 
 
@@ -74,3 +74,18 @@ class GarminOut(BaseModel):
     key_expires_soon: bool = False
     last_sync_at: datetime | None = None
     last_error: str | None = None
+
+
+class JobOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    type: str
+    status: JobStatus
+    user_id: int | None
+    attempts: int
+    error: str | None
+    created_at: datetime
+    scheduled_at: datetime
+    started_at: datetime | None
+    finished_at: datetime | None

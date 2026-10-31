@@ -18,7 +18,11 @@ API REST du site, sous `/api`. Elle synchronise les données Garmin, calcule les
 ## Infra
 
 - **API** : un processus FastAPI (`fastapi dev` en dev, sur :8000).
-- **Worker** (à venir) : un second processus qui exécute les tâches longues (synchro Garmin, traitement des activités, prédictions, analyses IA). Elles sont planifiées par APScheduler et mises en file dans la table `jobs`, lue avec `SELECT … FOR UPDATE SKIP LOCKED`. Pas de Redis : à cette échelle, PostgreSQL suffit.
+- **Worker** (`make worker`, ou `uv run python -m app.worker`) : un second processus qui exécute les tâches longues (synchro Garmin, traitement des activités, prédictions, analyses IA). Pas de Redis : à cette échelle, PostgreSQL suffit comme file.
+  - **File** : table `jobs`. `app/jobs.py` gère la mise en file (`enqueue`, `enqueue_unless_queued`), la prise d'une tâche avec `SELECT … FOR UPDATE SKIP LOCKED` et les réessais.
+  - **Tâches** : une fonction par type dans `app/tasks/`, enregistrée avec `@task("nom", retry_delays=…)`. Elle lève `RetryableError` pour un échec passager (relancée après 1, 5 puis 30 min pour Garmin). Toute autre exception la met en échec tout de suite, et ses écritures sont annulées.
+  - **Planificateur** : APScheduler tourne dans le worker et se contente de mettre des tâches en file (maintenance chaque nuit à 3 h, fuseau `TIMEZONE`, par défaut Europe/Paris).
+  - **Arrêt** : `Ctrl+C` / `SIGTERM` termine la tâche en cours puis s'arrête. Au redémarrage, une tâche coupée en plein milieu est remise en file.
 - **Base** : le conteneur `db` du `docker-compose.yml` à la racine.
 
 Les routes qui lancent une tâche longue répondent `202` avec un id de tâche, suivi par `GET /api/jobs/{id}`.

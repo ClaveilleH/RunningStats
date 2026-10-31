@@ -25,7 +25,7 @@ En cas de doute sur une règle métier, se référer à ces docs plutôt qu'impr
   - Liens et `goto()` via `resolve()` de `$app/paths` avec l'id de route (`resolve('/(public)/login')`). Appels API via `#lib/api.ts`.
   - Style : variables CSS de `src/app.css` reprises des maquettes (clair / sombre), polices Barlow / Barlow Condensed en local.
 - `docker-compose.yml` : PostgreSQL 17 pour le dev, exposé sur le port **5433**.
-- Tâches de fond : un processus worker à part, APScheduler + file dans la table `jobs` (`SELECT … FOR UPDATE SKIP LOCKED`). Pas de Redis.
+- Tâches de fond : un processus worker à part (`app/worker.py`), APScheduler + file dans la table `jobs` (`SELECT … FOR UPDATE SKIP LOCKED`). Pas de Redis. Nouvelle tâche = une fonction `@task(...)` dans `app/tasks/`, importée dans `app/tasks/__init__.py` ; `RetryableError` pour un échec passager.
 
 ## Commandes
 
@@ -36,6 +36,7 @@ docker compose up -d db           # base de dev
 # backend
 cd backend && uv sync
 uv run fastapi dev app/main.py    # API sur :8000
+uv run python -m app.worker       # worker des tâches de fond
 uv run pytest
 uv run ruff check . && uv run ruff format .
 
@@ -54,7 +55,7 @@ pnpm check && pnpm lint
 ### Données
 - Unités en base : distances en **m**, durées en **s**, dénivelés en **m**.
 - Dates en **UTC** en base ; le fuseau local de l'activité est gardé à part.
-- Périmètre : types Garmin `running` et `track_running` seulement. Tout le reste est ignoré.
+- Périmètre : types Garmin `running`, `trail_running` et `track_running` seulement (`trail_running` ajouté le 31/10/2026, absent de la doc du back). Tout le reste est ignoré, tapis (`treadmill_running`) compris.
 - Chaque valeur calculée garde sa trace : méthode, paramètres, version (sert au futur bouton « Explication »).
 - Seuils et réglages métier (route/trail, sommeil 50/30/20, règles de conseils…) vivent dans `app_settings`, jamais en dur dans le code.
 

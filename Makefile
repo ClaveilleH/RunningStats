@@ -1,4 +1,4 @@
-.PHONY: help install db db-stop api web dev migrate admin test lint format
+.PHONY: help install db db-stop api worker web dev migrate admin test lint format
 
 help: ## Liste les commandes
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
@@ -17,11 +17,14 @@ db-stop: ## Arrête PostgreSQL (les données restent dans le volume)
 api: ## Lance l'API en dev sur :8000
 	cd backend && uv run fastapi dev app/main.py --port 8000
 
+worker: ## Lance le worker des tâches de fond
+	cd backend && uv run python -m app.worker
+
 web: ## Lance le front en dev sur :5173
 	cd frontend && pnpm dev --port 5173
 
-dev: db ## Base + API + front en parallèle (Ctrl+C arrête tout)
-	$(MAKE) -j2 api web
+dev: db ## Base + API + worker + front en parallèle (Ctrl+C arrête tout)
+	$(MAKE) -j3 api worker web
 
 migrate: ## Applique les migrations Alembic
 	cd backend && uv run alembic upgrade head

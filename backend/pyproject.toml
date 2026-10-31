@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.20.1",
+    "apscheduler>=3.11,<4",
     "argon2-cffi>=25.1.0",
     "cryptography>=50.0.2",
     "fastapi[standard]>=0.162.0",

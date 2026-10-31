@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     # Clé maître (Fernet) qui chiffre les clés et jetons Garmin en base. Voir app/crypto.py.
     garmin_encryption_key: str = ""
 
+    # Tâches de fond
+    # Fuseau du groupe : sert aux horaires du planificateur (maintenance à 3 h, pause de nuit…).
+    timezone: str = "Europe/Paris"
+    worker_poll_seconds: float = 2.0
+
 
 @lru_cache
 def get_settings() -> Settings:
