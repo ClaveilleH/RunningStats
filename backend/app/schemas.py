@@ -144,3 +144,57 @@ class WeekOut(BaseModel):
     distance_m: float
     elevation_gain_m: float
     current: bool
+
+
+class SplitOut(BaseModel):
+    """Un tour de la montre ou un split par km."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    index: int
+    start_distance_m: float | None
+    end_distance_m: float | None
+    duration_s: float | None
+    elevation_gain_m: float | None
+    elevation_loss_m: float | None
+    avg_hr: int | None
+
+
+class ActivityDetailsOut(BaseModel):
+    elapsed_s: float | None
+    stopped_s: float | None
+    avg_cadence_spm: float | None
+    calories: float | None
+    min_altitude_m: float | None
+    max_altitude_m: float | None
+
+
+class ActivityOut(ActivityItemOut):
+    """Fiche d'une activité."""
+
+    user_id: int
+    moving_duration_s: float | None
+    elevation_loss_m: float | None
+    max_hr: int | None
+    km_effort: float | None
+    # Secondes en zones FC 1 à 5, selon Garmin.
+    hr_zones_s: list[float] | None
+    details: ActivityDetailsOut
+    km_splits: list[SplitOut]
+    laps: list[SplitOut]
+    # Faux tant que le FIT n'a pas été lu : pas encore de points ni de splits.
+    processed: bool
+
+
+class ActivityPointsOut(BaseModel):
+    """Points allégés, en colonnes de même longueur."""
+
+    step_m: float
+    distance_m: list[float | None]
+    timer_s: list[float | None]
+    lat: list[float | None]
+    lon: list[float | None]
+    altitude_m: list[float | None]
+    hr: list[int | None]
+    cadence_spm: list[int | None]
+    pace_s_per_km: list[float | None]

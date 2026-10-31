@@ -116,6 +116,14 @@ Lancés à la fin de `process_activity`, et pour toutes les activités par la t�
 - `GET /api/users/{id}/activities/weekly?weeks=12` : km, D+ et nombre de sorties par semaine (lundi → dimanche, heure locale), semaines vides comprises, la semaine en cours en dernier (`current`).
 - Pour l'instant, chacun ne voit que ses activités (403 sinon). Celles des amis passeront par le filtre de `privacy_settings`, pas encore construit.
 
+## Fiche d'une activité (`app/activity_detail.py`)
+
+- `GET /api/activities/{id}` : le résumé, les splits par km (`km_splits`), les tours de la montre (`laps`), les zones FC de Garmin, et des détails tirés du résumé Garmin (temps écoulé et arrêté, cadence, calories, altitude min / max). `processed` vaut faux tant que le FIT n'a pas été lu.
+- `GET /api/activities/{id}/points?step=25` : un point tous les `step` mètres (5 à 1 000), en colonnes (distance, temps chrono, lat / lon, altitude, FC, cadence, allure). Le dernier point est toujours gardé.
+  - L'allure est le temps chrono sur ±100 m autour du point : les pauses n'y comptent pas. Au-delà de 30 min/km (arrêt, marche très lente), elle reste vide.
+- `PUT` / `DELETE /api/activities/{id}/pin` : épingle ou désépingle la sortie sur le profil.
+- L'activité d'un autre membre répond 404, comme si elle n'existait pas, en attendant la confidentialité.
+
 ## Réglages du groupe (`app/settings.py`)
 
 - Table `app_settings` : une ligne par réglage, avec une valeur JSON. Chaque réglage est un modèle Pydantic dont les valeurs par défaut viennent de la doc ; la base ne garde que ce que l'admin a changé.

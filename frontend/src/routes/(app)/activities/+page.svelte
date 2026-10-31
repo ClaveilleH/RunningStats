@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { CATEGORY_LABELS, PERIODS, trackPath, type Category } from '#lib/activities.ts';
 	import {
@@ -258,7 +259,9 @@
 						<tr>
 							<td class="muted nowrap">{formatDay(a.start_time_local)}</td>
 							<td>
-								<span class="name">{a.name ?? 'Sortie'}</span>
+								<a class="name" href={resolve('/(app)/activities/[id]', { id: String(a.id) })}
+									>{a.name ?? 'Sortie'}</a
+								>
 								{#if a.location_name}<span class="muted small"> · {a.location_name}</span>{/if}
 							</td>
 							<td><span class="tag">{categoryLabel(a.category)}</span></td>
@@ -277,7 +280,9 @@
 			{#each data.list.items as a (a.id)}
 				<li class="panel card">
 					<div>
-						<div class="card-title">{a.name ?? 'Sortie'}</div>
+						<a class="card-title" href={resolve('/(app)/activities/[id]', { id: String(a.id) })}
+							>{a.name ?? 'Sortie'}</a
+						>
 						<div class="muted small">
 							{formatDay(a.start_time_local)} · {categoryLabel(a.category)}
 						</div>
@@ -653,7 +658,9 @@
 		gap: 14px;
 	}
 
+	/* Toute la carte est cliquable : le lien du titre la recouvre. */
 	.card {
+		position: relative;
 		padding: 14px;
 		display: flex;
 		flex-direction: column;
@@ -661,11 +668,23 @@
 	}
 
 	.card-title {
+		display: block;
+		text-decoration: none;
 		font-family: var(--font-display);
 		font-weight: 700;
 		font-size: 21px;
 		text-transform: uppercase;
 		line-height: 1.1;
+	}
+
+	.card-title::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+
+	.card:hover {
+		border-color: var(--ink);
 	}
 
 	.track {

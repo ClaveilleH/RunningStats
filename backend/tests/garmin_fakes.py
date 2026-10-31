@@ -57,7 +57,7 @@ def build_fit(
         record.altitude = 100.0 + i
         record.distance = i * 3.0
         record.speed = 3.0
-        record.heart_rate = 140 + i
+        record.heart_rate = 140 + i % 50
         record.cadence = 80
         builder.add(record)
         if i == pause_after:

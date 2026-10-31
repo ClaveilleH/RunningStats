@@ -3,13 +3,23 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query
 
-from app import activity_list
+from app import activity_detail, activity_list
 from app.activity_list import Filters, SortKey
 from app.api.deps import CurrentUser, DbSession
-from app.models import Activity
-from app.schemas import ActivityItemOut, ActivityListOut, ActivitySummaryOut, WeekOut
+from app.models import Activity, LapKind
+from app.schemas import (
+    ActivityDetailsOut,
+    ActivityItemOut,
+    ActivityListOut,
+    ActivityOut,
+    ActivityPointsOut,
+    ActivitySummaryOut,
+    SplitOut,
+    WeekOut,
+)
 
 router = APIRouter(prefix="/users/{user_id}/activities", tags=["activities"])
+activity_router = APIRouter(prefix="/activities", tags=["activities"])
 
 Category = Literal["road", "short_trail", "long_trail", "mixed"]
 
@@ -76,3 +86,56 @@ def weekly_activities(
     """Km et D+ par semaine pour le graphique, semaine en cours en dernier."""
     member = activity_list.member_for(db, viewer, user_id)
     return [WeekOut.model_validate(w) for w in activity_list.weekly(db, member.id, weeks)]
+
+
+@activity_router.get("/{activity_id}", response_model=ActivityOut)
+def get_activity(activity_id: int, viewer: CurrentUser, db: DbSession) -> ActivityOut:
+    """Résumé, splits par km, tours de la montre, zones FC et détails."""
+    activity = activity_detail.activity_for(db, viewer, activity_id)
+    item = _item(activity, None)
+    return ActivityOut(
+        **item.model_dump(),
+        user_id=activity.user_id,
+        moving_duration_s=activity.moving_duration_s,
+        elevation_loss_m=activity.elevation_loss_m,
+        max_hr=activity.max_hr,
+        km_effort=activity.km_effort,
+        hr_zones_s=activity.hr_zones_s,
+        details=ActivityDetailsOut.model_validate(activity_detail.details(activity)),
+        km_splits=[
+            SplitOut.model_validate(lap) for lap in activity_detail.laps(db, activity, LapKind.km)
+        ],
+        laps=[
+            SplitOut.model_validate(lap) for lap in activity_detail.laps(db, activity, LapKind.lap)
+        ],
+        processed=activity.processed_at is not None,
+    )
+
+
+@activity_router.get("/{activity_id}/points", response_model=ActivityPointsOut)
+def get_activity_points(
+    activity_id: int,
+    viewer: CurrentUser,
+    db: DbSession,
+    step: Annotated[float, Query(ge=5, le=1000)] = 25,
+) -> ActivityPointsOut:
+    """Points pour la carte, le profil et les courbes : un tous les `step` mètres."""
+    activity = activity_detail.activity_for(db, viewer, activity_id)
+    return ActivityPointsOut(step_m=step, **activity_detail.points(db, activity, step))
+
+
+@activity_router.put("/{activity_id}/pin", response_model=ActivityItemOut)
+def pin_activity(activity_id: int, viewer: CurrentUser, db: DbSession) -> ActivityItemOut:
+    """Épingle la sortie sur le profil."""
+    activity = activity_detail.activity_for(db, viewer, activity_id)
+    activity.pinned = True
+    db.commit()
+    return _item(activity, None)
+
+
+@activity_router.delete("/{activity_id}/pin", response_model=ActivityItemOut)
+def unpin_activity(activity_id: int, viewer: CurrentUser, db: DbSession) -> ActivityItemOut:
+    activity = activity_detail.activity_for(db, viewer, activity_id)
+    activity.pinned = False
+    db.commit()
+    return _item(activity, None)

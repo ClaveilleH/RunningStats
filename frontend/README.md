@@ -32,13 +32,14 @@ frontend/
 │   │   ├── garmin.svelte.ts     état Garmin du membre et suivi de la synchro (GarminSync)
 │   │   ├── format.ts            nombres, distances, durées, allures et dates en français
 │   │   ├── activities.ts        types et libellés des activités, périodes, vignette du tracé
-│   │   └── components/          composants partagés (Brand, SyncButton…)
+│   │   └── components/          composants partagés (Brand, SyncButton, RouteMap, DistanceChart…)
 │   └── routes/
 │       ├── +layout.ts           ssr = false, prerender = false (mode SPA)
 │       ├── +layout.svelte       polices et CSS globaux
 │       ├── (public)/            pages sans connexion : /login, /invitation/[token]
 │       └── (app)/               pages réservées aux membres ; +layout.ts redirige vers /login sinon
 │           ├── activities/      liste des activités (filtres, résumé, graphique, tableau / cartes)
+│           │   └── [id]/        fiche d'une activité (carte, profil, onglets)
 │           └── settings/        Réglages (pour l'instant : Garmin et données)
 ├── static/
 ├── vite.config.ts               config Vite et SvelteKit (adapter, proxy)
@@ -65,7 +66,12 @@ frontend/
 - **Périodes** : 7 j, 30 j, 3 mois (par défaut), 12 mois, tout, ou des dates choisies. Le front les traduit en `from` / `to`.
 - **Vue cartes** : elle demande `with_track=true`. La vignette est dessinée en SVG à partir des points [lat, lon], en projection simple (longitude × cos de la latitude moyenne).
 - **Graphique par semaine** : barres en CSS sur les 12 dernières semaines. La semaine en cours est hachurée.
-- **Pas encore là** : filtre par personne (attend la confidentialité), filtre entraînements / courses officielles et badge « Course » (attendent les courses), colonne « Analyse IA » (attend l'IA), et le lien vers la fiche d'une activité (prochaine étape).
+- **Fiche** (`/activities/[id]`) : environ 500 points demandés par sortie (`step` = distance / 500, au moins 10 m).
+  - `RouteMap` dessine le tracé en SVG (même projection que les vignettes), avec le départ (damier), l'arrivée et un repère tous les 1, 5 ou 10 km selon la longueur.
+  - `DistanceChart` est la zone commune au profil d'altitude et aux courbes. Le survol, ou les flèches du clavier, donne le point le plus proche, et ce point est partagé avec la carte.
+  - Chaque courbe a sa propre échelle, sans les 2 % de valeurs extrêmes, pour qu'un arrêt ne l'écrase pas.
+  - Onglets : Résumé (grands chiffres), Statistiques (splits par km ou par tour de la montre, zones FC de Garmin, détails), Graphiques (allure, FC, altitude, cadence).
+- **Pas encore là** : filtre par personne (attend la confidentialité), filtre entraînements / courses officielles et badge « Course » (attendent les courses), colonne « Analyse IA » (attend l'IA). Sur la fiche : analyse IA, résultat et découpage par segments de course, GAP (attend la courbe allure-pente de la prédiction), « Forme avant la course » et partage.
 
 ## Conventions
 

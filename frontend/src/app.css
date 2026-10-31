@@ -16,6 +16,16 @@
 	--soft: #f6e3d6;
 	--ok: #2f7d4f;
 	--map: #ebe5d6;
+	--track: #e4ddcd;
+	--blue: #2f6f8f;
+	--purple: #6b4fa0;
+	--alt: #8a8273;
+	/* Zones de FC, de la plus douce à la plus dure. */
+	--z1: #d9d2c3;
+	--z2: #e8c2a6;
+	--z3: #e58f5c;
+	--z4: #c9561f;
+	--z5: #8f2f08;
 	--danger: #a3281b;
 	--danger-soft: #f8e1dc;
 
@@ -40,6 +50,24 @@
 		--soft: #3a2a20;
 		--ok: #5cc184;
 		--map: #24282c;
+		--track: #2c3035;
+		--blue: #6cb4d9;
+		--purple: #b19be6;
+		--alt: #8f8a80;
+		--z1: #3a3f45;
+		--z2: #5a4a3c;
+		--z3: #8f4f2a;
+		--z4: #d0571f;
+		--z5: #ff9a5e;
+		--track: #2c3035;
+		--blue: #6cb4d9;
+		--purple: #b19be6;
+		--alt: #8f8a80;
+		--z1: #3a3f45;
+		--z2: #5a4a3c;
+		--z3: #8f4f2a;
+		--z4: #d0571f;
+		--z5: #ff9a5e;
 		--danger: #ff8a7a;
 		--danger-soft: #3b201c;
 		color-scheme: dark;
@@ -59,6 +87,15 @@
 	--soft: #3a2a20;
 	--ok: #5cc184;
 	--map: #24282c;
+	--track: #2c3035;
+	--blue: #6cb4d9;
+	--purple: #b19be6;
+	--alt: #8f8a80;
+	--z1: #3a3f45;
+	--z2: #5a4a3c;
+	--z3: #8f4f2a;
+	--z4: #d0571f;
+	--z5: #ff9a5e;
 	--danger: #ff8a7a;
 	--danger-soft: #3b201c;
 	color-scheme: dark;
