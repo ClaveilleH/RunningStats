@@ -4,6 +4,7 @@ import os
 from collections.abc import Iterator
 
 import pytest
+from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
@@ -13,6 +14,8 @@ from app.config import get_settings
 _dev_url = make_url(get_settings().database_url)
 TEST_URL = _dev_url.set(database=f"{_dev_url.database}_test")
 os.environ["DATABASE_URL"] = TEST_URL.render_as_string(hide_password=False)
+# Clé de chiffrement propre aux tests, indépendante du .env.
+os.environ["GARMIN_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 get_settings.cache_clear()
 
 from alembic import command  # noqa: E402

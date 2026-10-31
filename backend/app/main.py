@@ -2,7 +2,7 @@ from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.accounts import AccessError
-from app.api import admin, auth, health, me
+from app.api import admin, auth, garmin, health, me
 
 app = FastAPI(title="RunningStats API", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
@@ -16,5 +16,6 @@ api = APIRouter(prefix="/api")
 api.include_router(health.router)
 api.include_router(auth.router)
 api.include_router(me.router)
+api.include_router(garmin.router)
 api.include_router(admin.router)
 app.include_router(api)

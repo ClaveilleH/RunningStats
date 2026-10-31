@@ -51,6 +51,15 @@ backend/
 - **Mot de passe** : 8 caractères minimum, réglé uniquement par `MIN_PASSWORD_LENGTH` dans `app/security.py` (le front lit la valeur dans les réponses de l'API). Le changer déconnecte les autres appareils.
 - **Dépendances de route** : `CurrentUser` (401 sans session) et `AdminUser` (403 si non admin), dans `app/api/deps.py`.
 
+## Garmin
+
+- **Source** : l'API personnelle officielle de Garmin, via la bibliothèque [`garmin-connect-personal-api-python`](https://github.com/garmin/connect-personal-api-python). Elle est synchrone (requests), comme le reste du back.
+- **Clé du membre** : saisie dans Réglages (`PUT /api/me/garmin`). Elle est testée tout de suite auprès de Garmin, puis stockée **chiffrée** (Fernet). Une clé refusée n'est pas enregistrée.
+- **Jeton** : la clé s'échange contre un jeton JWT de 24 h, lui aussi stocké chiffré. `garmin.ensure_token()` le renouvelle s'il expire dans moins d'1 h. Si Garmin refuse la clé, le statut passe à `key_expired` (date de fin dépassée) ou `error`.
+- **Échange de la clé** : fait dans `app/garmin.py`, pas avec `PersonalApiAuthenticator` de la bibliothèque, qui écrirait le jeton en clair dans un fichier de `~/.config`.
+- **Clé maître** : `GARMIN_ENCRYPTION_KEY` dans `.env` (voir `.env.example` pour la générer). La perdre rend les clés enregistrées illisibles, et chaque membre devra ressaisir la sienne.
+- **Tests** : `_request_token` est remplacé par un faux, aucun appel réseau.
+
 ## Commandes
 
 ```bash

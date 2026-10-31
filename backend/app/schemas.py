@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 from pydantic_core import PydanticCustomError
 
-from app.models import Role
+from app.models import GarminSource, GarminStatus, Role
 from app.security import MIN_PASSWORD_LENGTH
 
 
@@ -58,3 +58,19 @@ class InvitationCheckOut(BaseModel):
 class InvitationOut(BaseModel):
     token: str
     expires_at: datetime
+
+
+class GarminKeyIn(BaseModel):
+    api_key: str = Field(min_length=1, max_length=2000)
+    # Date de fin de validité affichée par Garmin à la création de la clé (facultative).
+    api_key_expires_on: date | None = None
+
+
+class GarminOut(BaseModel):
+    connected: bool
+    source: GarminSource | None = None
+    status: GarminStatus | None = None
+    api_key_expires_at: datetime | None = None
+    key_expires_soon: bool = False
+    last_sync_at: datetime | None = None
+    last_error: str | None = None

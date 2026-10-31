@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # True en production (HTTPS) ; False en dev sur http://localhost.
     session_cookie_secure: bool = False
 
+    # Clé maître (Fernet) qui chiffre les clés et jetons Garmin en base. Voir app/crypto.py.
+    garmin_encryption_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
