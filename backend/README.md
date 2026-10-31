@@ -107,6 +107,15 @@ Lancés à la fin de `process_activity`, et pour toutes les activités par la t�
 - **Splits par km** (`activity_laps`, type `km`) : bornes interpolées entre deux points, durée en **temps chrono** (sans les pauses lues dans les événements `timer` du FIT). Le D+ / D- suit le profil d'altitude du FIT (seuil de 1 m), puis il est mis à l'échelle pour que le total égale le D+ / D- officiel de Garmin.
 - **Trace** : `activities.calc_trace` garde la méthode, la version, les paramètres et les entrées de chaque calcul.
 
+## Liste des activités (`app/activity_list.py`)
+
+- `GET /api/users/{id}/activities` : filtres `category` (road, short_trail, long_trail, mixed), `q` (nom ou lieu), `from` / `to` (dates locales de la montre, incluses), tri `sort` (date, distance, elevation, duration) et `order`, pagination `page` / `page_size` (20 par défaut, 100 max).
+  - La réponse donne aussi `summary`, les totaux de toute la sélection (sorties, distance, D+, temps), pas seulement ceux de la page.
+  - L'allure (`pace_s_per_km`) se calcule sur `duration_s` : chez Garmin, c'est le temps chrono, pauses exclues.
+  - `with_track=true` ajoute un tracé simplifié d'environ 60 points par activité, pour les vignettes de la vue cartes.
+- `GET /api/users/{id}/activities/weekly?weeks=12` : km, D+ et nombre de sorties par semaine (lundi → dimanche, heure locale), semaines vides comprises, la semaine en cours en dernier (`current`).
+- Pour l'instant, chacun ne voit que ses activités (403 sinon). Celles des amis passeront par le filtre de `privacy_settings`, pas encore construit.
+
 ## Réglages du groupe (`app/settings.py`)
 
 - Table `app_settings` : une ligne par réglage, avec une valeur JSON. Chaque réglage est un modèle Pydantic dont les valeurs par défaut viennent de la doc ; la base ne garde que ce que l'admin a changé.

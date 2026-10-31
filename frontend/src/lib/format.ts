@@ -29,3 +29,59 @@ export function everyLabel(minutes: number): string {
 	if (minutes % 60 === 0) return `toutes les ${minutes / 60} h`;
 	return `toutes les ${minutes} min`;
 }
+
+const NBSP = ' '; // espace fine insécable, séparateur de milliers en français
+
+/** 1380 → « 1 380 ». */
+export function formatInt(value: number): string {
+	return Math.round(value)
+		.toString()
+		.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+}
+
+/** 7834 m → « 7,8 ». Au-delà de 100 km, sans décimale. */
+export function formatKm(meters: number): string {
+	const km = meters / 1000;
+	return km >= 100 ? formatInt(km) : km.toFixed(1).replace('.', ',');
+}
+
+/** 2660 s → « 44:20 », 11885 s → « 3:18:05 ». */
+export function formatDuration(seconds: number): string {
+	const total = Math.round(seconds);
+	const h = Math.floor(total / 3600);
+	const m = Math.floor((total % 3600) / 60);
+	const s = total % 60;
+	const mm = h ? String(m).padStart(2, '0') : String(m);
+	return `${h ? `${h}:` : ''}${mm}:${String(s).padStart(2, '0')}`;
+}
+
+/** Allure en s/km → « 5:41 ». */
+export function formatPace(secondsPerKm: number): string {
+	const total = Math.round(secondsPerKm);
+	return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** Date locale de la montre (sans fuseau) → « lun. 26 oct. », avec l'année si ce n'est pas l'année en cours. */
+export function formatDay(localIso: string, now = new Date()): string {
+	const date = new Date(localIso);
+	return date.toLocaleDateString('fr-FR', {
+		weekday: 'short',
+		day: 'numeric',
+		month: 'short',
+		year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric'
+	});
+}
+
+/** « 26 oct. » (semaine du graphique). */
+export function formatDayMonth(isoDate: string): string {
+	return new Date(`${isoDate}T00:00:00`).toLocaleDateString('fr-FR', {
+		day: 'numeric',
+		month: 'short'
+	});
+}
+
+/** Date du jour au format AAAA-MM-JJ, dans le fuseau du navigateur. */
+export function isoDate(date: Date): string {
+	const pad = (n: number) => String(n).padStart(2, '0');
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}

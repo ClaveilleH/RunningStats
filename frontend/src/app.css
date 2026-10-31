@@ -15,6 +15,7 @@
 	--on-accent: #ffffff;
 	--soft: #f6e3d6;
 	--ok: #2f7d4f;
+	--map: #ebe5d6;
 	--danger: #a3281b;
 	--danger-soft: #f8e1dc;
 
@@ -38,6 +39,7 @@
 		--on-accent: #15171a;
 		--soft: #3a2a20;
 		--ok: #5cc184;
+		--map: #24282c;
 		--danger: #ff8a7a;
 		--danger-soft: #3b201c;
 		color-scheme: dark;
@@ -56,6 +58,7 @@
 	--on-accent: #15171a;
 	--soft: #3a2a20;
 	--ok: #5cc184;
+	--map: #24282c;
 	--danger: #ff8a7a;
 	--danger-soft: #3b201c;
 	color-scheme: dark;

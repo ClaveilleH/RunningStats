@@ -99,3 +99,48 @@ class JobStartedOut(BaseModel):
     """Réponse 202 d'une route qui lance une tâche longue."""
 
     job_id: int
+
+
+class ActivityItemOut(BaseModel):
+    """Une ligne de la liste des activités."""
+
+    id: int
+    name: str | None
+    activity_type: str
+    category: str | None
+    start_time: datetime
+    # Heure de la montre, sans fuseau : c'est elle qu'on affiche.
+    start_time_local: datetime
+    location_name: str | None
+    distance_m: float | None
+    duration_s: float | None  # temps chrono, pauses exclues
+    elevation_gain_m: float | None
+    avg_hr: int | None
+    pace_s_per_km: float | None
+    pinned: bool
+    # Tracé simplifié [lat, lon] pour la vue cartes (si demandé).
+    track: list[list[float]] | None = None
+
+
+class ActivitySummaryOut(BaseModel):
+    count: int
+    distance_m: float
+    elevation_gain_m: float
+    duration_s: float
+
+
+class ActivityListOut(BaseModel):
+    items: list[ActivityItemOut]
+    total: int
+    page: int
+    page_size: int
+    # Totaux de toute la sélection (filtres appliqués), pas seulement de la page.
+    summary: ActivitySummaryOut
+
+
+class WeekOut(BaseModel):
+    week_start: date
+    count: int
+    distance_m: float
+    elevation_gain_m: float
+    current: bool

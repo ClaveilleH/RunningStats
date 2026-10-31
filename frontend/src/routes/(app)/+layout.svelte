@@ -24,9 +24,19 @@
 	}
 </script>
 
-<!-- Bandeau provisoire : la navigation des maquettes viendra avec les pages. -->
+<!-- Les autres entrées (Courses, Amis) arrivent avec leurs pages. -->
 <header>
 	<Brand />
+	<nav aria-label="Navigation principale">
+		<a href={resolve('/(app)')} aria-current={page.route.id === '/(app)' ? 'page' : undefined}
+			>Accueil</a
+		>
+		<a
+			href={resolve('/(app)/activities')}
+			aria-current={page.route.id?.startsWith('/(app)/activities') ? 'page' : undefined}
+			>Activités</a
+		>
+	</nav>
 	<div class="right">
 		<a
 			href={resolve('/(app)/settings')}
@@ -67,7 +77,30 @@
 		display: flex;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 16px;
+		gap: 28px;
+	}
+
+	nav {
+		display: flex;
+		gap: 2px;
+		flex-wrap: wrap;
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 18px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+
+	nav a {
+		padding: 8px 12px;
+		color: var(--header-muted);
+		text-decoration: none;
+		border-bottom: 3px solid transparent;
+	}
+
+	nav a[aria-current='page'] {
+		color: var(--header-ink);
+		border-bottom-color: var(--accent);
 	}
 
 	.right {

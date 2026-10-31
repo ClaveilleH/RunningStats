@@ -30,13 +30,15 @@ frontend/
 │   ├── lib/
 │   │   ├── api.ts               appels /api, messages d'erreur en français, fetchMe, safeNext
 │   │   ├── garmin.svelte.ts     état Garmin du membre et suivi de la synchro (GarminSync)
-│   │   ├── format.ts            dates et durées en français (« il y a 14 min »)
+│   │   ├── format.ts            nombres, distances, durées, allures et dates en français
+│   │   ├── activities.ts        types et libellés des activités, périodes, vignette du tracé
 │   │   └── components/          composants partagés (Brand, SyncButton…)
 │   └── routes/
 │       ├── +layout.ts           ssr = false, prerender = false (mode SPA)
 │       ├── +layout.svelte       polices et CSS globaux
 │       ├── (public)/            pages sans connexion : /login, /invitation/[token]
 │       └── (app)/               pages réservées aux membres ; +layout.ts redirige vers /login sinon
+│           ├── activities/      liste des activités (filtres, résumé, graphique, tableau / cartes)
 │           └── settings/        Réglages (pour l'instant : Garmin et données)
 ├── static/
 ├── vite.config.ts               config Vite et SvelteKit (adapter, proxy)
@@ -56,6 +58,14 @@ frontend/
   - Une synchro déjà en cours est retrouvée au chargement (`sync_job_id` dans `GET /api/me/garmin`), par exemple juste après l'enregistrement de la clé.
   - Si Garmin ne répond pas, la tâche est remise en file par le worker : le bouton s'arrête et l'indique, sans attendre le nouvel essai.
 - La maquette ne montre que l'état « connecté » ; le formulaire de clé reprend ses styles de champs.
+
+## Activités
+
+- **Liste** (`/activities`) : tous les filtres sont dans l'URL (`q`, `category`, `period`, `from` / `to`, `sort`, `view`, `page`). Changer un filtre réécrit l'URL et relance le `load`. Le lien se partage, et le bouton retour marche.
+- **Périodes** : 7 j, 30 j, 3 mois (par défaut), 12 mois, tout, ou des dates choisies. Le front les traduit en `from` / `to`.
+- **Vue cartes** : elle demande `with_track=true`. La vignette est dessinée en SVG à partir des points [lat, lon], en projection simple (longitude × cos de la latitude moyenne).
+- **Graphique par semaine** : barres en CSS sur les 12 dernières semaines. La semaine en cours est hachurée.
+- **Pas encore là** : filtre par personne (attend la confidentialité), filtre entraînements / courses officielles et badge « Course » (attendent les courses), colonne « Analyse IA » (attend l'IA), et le lien vers la fiche d'une activité (prochaine étape).
 
 ## Conventions
 
