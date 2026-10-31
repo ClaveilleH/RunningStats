@@ -25,16 +25,32 @@ Front et API partagent une seule origine. Le cookie de session HttpOnly marche d
 ```
 frontend/
 ├── src/
-│   ├── app.html         page HTML de base (lang="fr")
-│   ├── lib/             code partagé, importé via l'alias #lib/*
+│   ├── app.html                 page HTML de base (lang="fr")
+│   ├── app.css                  couleurs des maquettes (clair / sombre), polices, styles de formulaire
+│   ├── lib/
+│   │   ├── api.ts               appels /api, messages d'erreur en français, fetchMe, safeNext
+│   │   └── components/          composants partagés (Brand…)
 │   └── routes/
-│       ├── +layout.ts   ssr = false, prerender = false (mode SPA)
-│       ├── +layout.svelte
-│       └── +page.svelte page provisoire : affiche l'état de l'API
-├── static/              fichiers servis tels quels
-├── vite.config.ts       config Vite et SvelteKit (adapter, proxy)
+│       ├── +layout.ts           ssr = false, prerender = false (mode SPA)
+│       ├── +layout.svelte       polices et CSS globaux
+│       ├── (public)/            pages sans connexion : /login, /invitation/[token]
+│       └── (app)/               pages réservées aux membres ; +layout.ts redirige vers /login sinon
+├── static/
+├── vite.config.ts               config Vite et SvelteKit (adapter, proxy)
 └── package.json
 ```
+
+## Connexion
+
+- `(app)/+layout.ts` appelle `GET /api/me`. Sans session, il redirige vers `/login?next=<page demandée>`, puis on revient sur cette page après connexion.
+- `/invitation/[token]` vérifie le lien, puis crée le compte. Le nouveau membre est connecté directement.
+- Le cookie de session est `HttpOnly` : le front ne le lit jamais, il sait qu'il est connecté parce que `/api/me` répond.
+
+## Conventions
+
+- Imports internes par l'alias `#lib/…` **avec l'extension** (`#lib/api.ts`, `#lib/components/Brand.svelte`).
+- Liens et `goto()` passent par `resolve()` de `$app/paths`, qui prend l'identifiant de la route, groupe compris : `resolve('/(public)/login')`. ESLint le vérifie.
+- Couleurs : uniquement les variables de `app.css` (`var(--accent)`…), pour que le thème sombre suive. Polices Barlow et Barlow Condensed installées en local (`@fontsource`), sans appel à Google Fonts.
 
 Les pages à construire suivent les [maquettes](https://claude.ai/artifact/MAHSw1opRbUcHhiJN14qf6) : accueil, profil, activités, courses, fiche de course, amis, comparer, réglages, admin.
 

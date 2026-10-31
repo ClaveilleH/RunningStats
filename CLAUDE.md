@@ -20,7 +20,10 @@ En cas de doute sur une règle métier, se référer à ces docs plutôt qu'impr
   - Migrations : `uv run alembic revision --autogenerate -m "..."` puis `uv run alembic upgrade head`.
 - `frontend/` : SvelteKit 3 + Svelte 5 (runes) en **SPA**, TypeScript, ESLint + Prettier. Géré avec **pnpm 10** (épinglé dans `packageManager` ; pnpm 8 refuse d'installer).
   - Config Vite + SvelteKit dans `vite.config.ts` : adapter-static avec `fallback: 'index.html'`, proxy `/api` → `:8000` en dev.
-  - `src/routes/+layout.ts` : `ssr = false`, `prerender = false`. Alias d'import `#lib/*` → `src/lib/*`.
+  - `src/routes/+layout.ts` : `ssr = false`, `prerender = false`. Alias d'import `#lib/*` → `src/lib/*`, **avec l'extension** (`#lib/api.ts`).
+  - Routes : `(public)/` sans connexion (login, invitation), `(app)/` réservé aux membres (redirection vers `/login?next=`).
+  - Liens et `goto()` via `resolve()` de `$app/paths` avec l'id de route (`resolve('/(public)/login')`). Appels API via `#lib/api.ts`.
+  - Style : variables CSS de `src/app.css` reprises des maquettes (clair / sombre), polices Barlow / Barlow Condensed en local.
 - `docker-compose.yml` : PostgreSQL 17 pour le dev, exposé sur le port **5433**.
 - Tâches de fond : un processus worker à part, APScheduler + file dans la table `jobs` (`SELECT … FOR UPDATE SKIP LOCKED`). Pas de Redis.
 
