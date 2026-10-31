@@ -1,5 +1,5 @@
 """Toutes les tâches de fond, importées ici pour être enregistrées auprès de app.jobs."""
 
-from app.tasks import maintenance
+from app.tasks import garmin_sync, maintenance
 
-__all__ = ["maintenance"]
+__all__ = ["garmin_sync", "maintenance"]

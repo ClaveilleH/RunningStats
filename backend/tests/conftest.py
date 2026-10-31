@@ -1,6 +1,7 @@
 """Les tests tournent sur une base dédiée <nom>_test, créée et migrée automatiquement."""
 
 import os
+import tempfile
 from collections.abc import Iterator
 
 import pytest
@@ -16,6 +17,8 @@ TEST_URL = _dev_url.set(database=f"{_dev_url.database}_test")
 os.environ["DATABASE_URL"] = TEST_URL.render_as_string(hide_password=False)
 # Clé de chiffrement propre aux tests, indépendante du .env.
 os.environ["GARMIN_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
+# Fichiers FIT des tests dans un dossier temporaire.
+os.environ["DATA_DIR"] = tempfile.mkdtemp(prefix="runningstats-tests-")
 get_settings.cache_clear()
 
 from alembic import command  # noqa: E402

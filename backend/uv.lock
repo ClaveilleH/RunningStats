@@ -644,6 +644,24 @@ wheels = [
 ]
 
 [[package]]
+name = "fit-tool"
+version = "0.9.17"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/06/f6/5a41ad7398afffa5aa7798d654d16045ebde739bfae5d2bbe6f74a8d3800/fit_tool-0.9.17.tar.gz", hash = "sha256:35a7d92c7b735c047ecfe189d222427076efd8935fb4465a5f1062a4bf16ecf4", size = 324106, upload-time = "2026-10-28T05:42:18.917Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/44/4b6c7383a2cd802f46c14d5754aa69a534e23e3a8e98d2c7dc59af041fad/fit_tool-0.9.17-py3-none-any.whl", hash = "sha256:c42f48dc9196ee76b63b869f398162ef5115fd0747c4e8cde177763d16338c9f", size = 526735, upload-time = "2026-10-28T05:42:17.245Z" },
+]
+
+[[package]]
+name = "fitdecode"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/87/19/1bde056f443d8ce890dbc0f0bd8a216cc9ebfda4221619767f80cf1835e2/fitdecode-0.11.0.tar.gz", hash = "sha256:52d920e50eaa76eb065b20bfd4e42f72195e894a079098dacc1cafa908cd4b83", size = 107149, upload-time = "2025-08-06T08:08:42.105Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7b/7b/75829f9b77b2546f955ec265de10de993939bf3218b5d957ca79803a2d28/fitdecode-0.11.0-py3-none-any.whl", hash = "sha256:a1bdb9b4d1e9ebac0001fc58c22fe07a3f9967ca4e13258c6ef99cdb8d697a78", size = 109961, upload-time = "2025-08-06T08:08:39.033Z" },
+]
+
+[[package]]
 name = "garmin-connect-personal-api-python"
 version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1652,6 +1670,7 @@ dependencies = [
     { name = "argon2-cffi" },
     { name = "cryptography" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "fitdecode" },
     { name = "garmin-connect-personal-api-python" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic-settings" },
@@ -1660,6 +1679,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "fit-tool" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -1671,6 +1691,7 @@ requires-dist = [
     { name = "argon2-cffi", specifier = ">=25.1.0" },
     { name = "cryptography", specifier = ">=50.0.2" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.162.0" },
+    { name = "fitdecode", specifier = ">=0.11.0" },
     { name = "garmin-connect-personal-api-python", specifier = ">=1.0.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
     { name = "pydantic-settings", specifier = ">=2.16.2" },
@@ -1679,6 +1700,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "fit-tool", specifier = ">=0.9.17" },
     { name = "pytest", specifier = ">=9.2.0" },
     { name = "ruff", specifier = ">=0.17.3" },
 ]

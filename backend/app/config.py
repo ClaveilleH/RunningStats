@@ -10,6 +10,9 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env", extra="ignore")
 
+    # Fichiers FIT bruts et autres données locales (ignoré par git).
+    data_dir: Path = ROOT_DIR / "data"
+
     database_url: str = "postgresql+psycopg://runningstats:runningstats@localhost:5433/runningstats"
 
     # Accès

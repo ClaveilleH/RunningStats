@@ -3,10 +3,10 @@ from datetime import UTC, datetime, time
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import delete, select
 
-from app import crypto, garmin
+from app import crypto, garmin, jobs
 from app.api.deps import CurrentUser, DbSession
 from app.models import GarminAccount, GarminSource, GarminStatus
-from app.schemas import GarminKeyIn, GarminOut
+from app.schemas import GarminKeyIn, GarminOut, JobStartedOut
 
 router = APIRouter(prefix="/me/garmin", tags=["garmin"])
 
@@ -60,9 +60,10 @@ def set_garmin_key(body: GarminKeyIn, user: CurrentUser, db: DbSession) -> Garmi
     garmin.store_token(account, token, token_expires_at)
     account.status = GarminStatus.ok
     account.last_error = None
-    # La première synchro (tout l'historique) sera lancée ici quand les tâches de fond existeront.
+    # Première synchro (tout l'historique si la clé est nouvelle).
+    job = jobs.enqueue_unless_queued(db, "garmin_sync", user_id=user.id)
     db.commit()
-    return _out(account)
+    return _out(account).model_copy(update={"sync_job_id": job.id})
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
@@ -70,3 +71,17 @@ def disconnect_garmin(user: CurrentUser, db: DbSession) -> None:
     """Oublie la clé et le jeton. Les données déjà synchronisées restent."""
     db.execute(delete(GarminAccount).where(GarminAccount.user_id == user.id))
     db.commit()
+
+
+sync_router = APIRouter(prefix="/me", tags=["garmin"])
+
+
+@sync_router.post("/sync", response_model=JobStartedOut, status_code=status.HTTP_202_ACCEPTED)
+def sync_now(user: CurrentUser, db: DbSession) -> JobStartedOut:
+    """Synchro manuelle (bouton Synchroniser). Réutilise une synchro déjà en file."""
+    account = db.scalar(select(GarminAccount).where(GarminAccount.user_id == user.id))
+    if account is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Connecte d'abord ton compte Garmin.")
+    job = jobs.enqueue_unless_queued(db, "garmin_sync", user_id=user.id)
+    db.commit()
+    return JobStartedOut(job_id=job.id)

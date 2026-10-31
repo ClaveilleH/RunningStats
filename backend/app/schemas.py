@@ -74,6 +74,8 @@ class GarminOut(BaseModel):
     key_expires_soon: bool = False
     last_sync_at: datetime | None = None
     last_error: str | None = None
+    # Tâche de synchro lancée par l'appel (enregistrement de la clé).
+    sync_job_id: int | None = None
 
 
 class JobOut(BaseModel):
@@ -89,3 +91,9 @@ class JobOut(BaseModel):
     scheduled_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
+
+
+class JobStartedOut(BaseModel):
+    """Réponse 202 d'une route qui lance une tâche longue."""
+
+    job_id: int

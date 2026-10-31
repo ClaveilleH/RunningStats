@@ -8,10 +8,13 @@ en cache dans un fichier : chez nous il est stocké chiffré en base.
 import base64
 import json
 import os
+import threading
+import time
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 import requests
-from garmin_personal_api import GarminPersonalApiClient
+from garmin_personal_api import GarminPersonalApiClient, HttpError
 from garmin_personal_api.constants import BASE_URL_ENV_VAR, DEFAULT_BASE_URL, TOKEN_PATH
 from sqlalchemy.orm import Session
 
@@ -24,6 +27,8 @@ TIMEOUT_SECONDS = 30
 TOKEN_REFRESH_MARGIN = timedelta(hours=1)
 # La clé expire bientôt : prévenir le membre (bandeau dans Réglages).
 KEY_EXPIRY_WARNING = timedelta(days=7)
+# Doc : 0,5 s entre deux requêtes vers Garmin.
+MIN_SECONDS_BETWEEN_REQUESTS = 0.5
 
 
 class GarminKeyRejected(Exception):
@@ -76,11 +81,12 @@ def store_token(account: GarminAccount, token: str, expires_at: datetime) -> Non
     account.token_expires_at = expires_at
 
 
-def ensure_token(db: Session, account: GarminAccount) -> str:
+def ensure_token(db: Session, account: GarminAccount, *, force: bool = False) -> str:
     """Jeton valable au moins 1 h, renouvelé si besoin. Met à jour le statut en cas de refus."""
     now = utcnow()
     if (
-        account.token_encrypted
+        not force
+        and account.token_encrypted
         and account.token_expires_at
         and account.token_expires_at - now > TOKEN_REFRESH_MARGIN
     ):
@@ -100,8 +106,48 @@ def ensure_token(db: Session, account: GarminAccount) -> str:
     return token
 
 
-def client_for(db: Session, account: GarminAccount) -> GarminPersonalApiClient:
-    return GarminPersonalApiClient(ensure_token(db, account), timeout=TIMEOUT_SECONDS)
+_throttle_lock = threading.Lock()
+_last_request_at = 0.0
+
+
+def _throttle() -> None:
+    global _last_request_at
+    with _throttle_lock:
+        wait = _last_request_at + MIN_SECONDS_BETWEEN_REQUESTS - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        _last_request_at = time.monotonic()
+
+
+def call[T](db: Session, account: GarminAccount, fn: Callable[[GarminPersonalApiClient], T]) -> T:
+    """Appelle Garmin avec un jeton valide et classe les erreurs.
+
+    - 401 : nouveau jeton une fois ; si Garmin refuse encore, GarminKeyRejected (statut erreur).
+    - 429, 5xx, réseau : GarminUnavailable (à réessayer plus tard).
+    """
+    for attempt in (1, 2):
+        client = GarminPersonalApiClient(
+            ensure_token(db, account, force=attempt == 2), timeout=TIMEOUT_SECONDS
+        )
+        _throttle()
+        try:
+            return fn(client)
+        except HttpError as e:
+            if e.status_code in (401, 403):
+                if attempt == 1:
+                    continue
+                account.status = GarminStatus.error
+                account.last_error = "Garmin refuse l'accès même avec un nouveau jeton."
+                db.flush()
+                raise GarminKeyRejected(account.last_error) from e
+            if e.status_code == 429 or e.status_code >= 500:
+                raise GarminUnavailable(f"Garmin a répondu HTTP {e.status_code}.") from e
+            raise
+        except requests.RequestException as e:
+            raise GarminUnavailable("Garmin est injoignable.") from e
+        finally:
+            client.close()
+    raise AssertionError("unreachable")
 
 
 def key_expires_soon(account: GarminAccount) -> bool:

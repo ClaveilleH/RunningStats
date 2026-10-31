@@ -62,7 +62,13 @@ backend/
 - **Jeton** : la clé s'échange contre un jeton JWT de 24 h, lui aussi stocké chiffré. `garmin.ensure_token()` le renouvelle s'il expire dans moins d'1 h. Si Garmin refuse la clé, le statut passe à `key_expired` (date de fin dépassée) ou `error`.
 - **Échange de la clé** : fait dans `app/garmin.py`, pas avec `PersonalApiAuthenticator` de la bibliothèque, qui écrirait le jeton en clair dans un fichier de `~/.config`.
 - **Clé maître** : `GARMIN_ENCRYPTION_KEY` dans `.env` (voir `.env.example` pour la générer). La perdre rend les clés enregistrées illisibles, et chaque membre devra ressaisir la sienne.
-- **Tests** : `_request_token` est remplacé par un faux, aucun appel réseau.
+- **Appels** : toujours via `garmin.call(db, account, fn)`. La fonction attend 0,5 s entre deux requêtes, renouvelle le jeton une fois sur un 401, et traduit les erreurs : 429, 5xx et réseau deviennent `GarminUnavailable` (tâche réessayée) ; un refus répété devient `GarminKeyRejected` (statut `error`).
+- **Synchro** (`app/tasks/garmin_sync.py`) :
+  1. `garmin_sync` parcourt la liste des activités, des plus récentes aux plus anciennes, et ne garde que `running`, `trail_running` et `track_running`. Tant que l'historique n'a pas été lu en entier (`sync_cursor.history_complete`), elle lit toutes les pages. Ensuite, elle s'arrête à la première activité déjà connue. Chaque page est commitée, donc une synchro coupée reprend sans rien perdre.
+  2. Chaque nouvelle activité met en file une tâche `process_activity`. Elle télécharge le FIT, le garde brut dans `DATA_DIR/fit/<membre>/<id Garmin>.zip`, puis enregistre les points (`activity_points`, environ 1 par seconde) et les tours de la montre (`activity_laps`, type `lap`).
+- **Déclenchement** : à l'enregistrement de la clé (`PUT /api/me/garmin` renvoie `sync_job_id`), ou par le bouton de synchro (`POST /api/me/sync`, réponse 202 avec l'id de la tâche). La synchro périodique viendra avec les réglages du groupe.
+- **Pas encore calculés** : la catégorie route / trail, le km-effort et les splits par km (prochaine étape).
+- **Tests** : faux Garmin dans `tests/garmin_fakes.py` (liste d'activités, FIT synthétiques générés avec `fit-tool`, erreurs HTTP à la demande). Aucun appel réseau.
 
 ## Commandes
 
