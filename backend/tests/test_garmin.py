@@ -173,3 +173,17 @@ def test_ensure_token_marks_error_when_key_refused(
         garmin.ensure_token(db, account)
     assert account.status == GarminStatus.error
     assert account.last_error
+
+
+def test_get_shows_running_sync_and_interval(
+    admin_client: TestClient, admin: User, db: Session, fake_garmin: FakeGarmin
+) -> None:
+    saved = admin_client.put("/api/me/garmin", json={"api_key": API_KEY}).json()
+    assert saved["sync_job_id"] is not None
+    body = admin_client.get("/api/me/garmin").json()
+    assert body["sync_job_id"] == saved["sync_job_id"]
+    assert body["sync_interval_minutes"] == 60  # réglage du groupe
+
+    admin.sync_interval_minutes = 30
+    db.commit()
+    assert admin_client.get("/api/me/garmin").json()["sync_interval_minutes"] == 30

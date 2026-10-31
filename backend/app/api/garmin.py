@@ -2,18 +2,33 @@ from datetime import UTC, datetime, time
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import delete, select
+from sqlalchemy.orm import Session
 
-from app import crypto, garmin, jobs
+from app import crypto, garmin, jobs, settings
 from app.api.deps import CurrentUser, DbSession
-from app.models import GarminAccount, GarminSource, GarminStatus
+from app.models import GarminAccount, GarminSource, GarminStatus, Job, JobStatus, User
 from app.schemas import GarminKeyIn, GarminOut, JobStartedOut
 
 router = APIRouter(prefix="/me/garmin", tags=["garmin"])
 
 
-def _out(account: GarminAccount | None) -> GarminOut:
+def _running_sync(db: Session, user: User) -> int | None:
+    """Synchro en file ou en cours, pour que la page la retrouve après un rechargement."""
+    return db.scalar(
+        select(Job.id).where(
+            Job.type == "garmin_sync",
+            Job.user_id == user.id,
+            Job.status.in_([JobStatus.pending, JobStatus.running]),
+        )
+    )
+
+
+def _out(db: Session, user: User, account: GarminAccount | None) -> GarminOut:
     if account is None:
         return GarminOut(connected=False)
+    interval = (
+        user.sync_interval_minutes or settings.get(db, settings.SyncSchedule).interval_minutes
+    )
     return GarminOut(
         connected=True,
         source=account.source,
@@ -22,13 +37,15 @@ def _out(account: GarminAccount | None) -> GarminOut:
         key_expires_soon=garmin.key_expires_soon(account),
         last_sync_at=account.last_sync_at,
         last_error=account.last_error,
+        sync_interval_minutes=interval,
+        sync_job_id=_running_sync(db, user),
     )
 
 
 @router.get("", response_model=GarminOut)
 def get_garmin(user: CurrentUser, db: DbSession) -> GarminOut:
     account = db.scalar(select(GarminAccount).where(GarminAccount.user_id == user.id))
-    return _out(account)
+    return _out(db, user, account)
 
 
 @router.put("", response_model=GarminOut)
@@ -61,9 +78,9 @@ def set_garmin_key(body: GarminKeyIn, user: CurrentUser, db: DbSession) -> Garmi
     account.status = GarminStatus.ok
     account.last_error = None
     # Première synchro (tout l'historique si la clé est nouvelle).
-    job = jobs.enqueue_unless_queued(db, "garmin_sync", user_id=user.id)
+    jobs.enqueue_unless_queued(db, "garmin_sync", user_id=user.id)
     db.commit()
-    return _out(account).model_copy(update={"sync_job_id": job.id})
+    return _out(db, user, account)
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)

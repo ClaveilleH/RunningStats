@@ -74,7 +74,9 @@ class GarminOut(BaseModel):
     key_expires_soon: bool = False
     last_sync_at: datetime | None = None
     last_error: str | None = None
-    # Tâche de synchro lancée par l'appel (enregistrement de la clé).
+    # Fréquence de la synchro auto : celle du membre, sinon celle du groupe.
+    sync_interval_minutes: int | None = None
+    # Synchro en file ou en cours (celle lancée par l'enregistrement de la clé, par exemple).
     sync_job_id: int | None = None
 
 

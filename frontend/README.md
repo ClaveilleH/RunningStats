@@ -29,12 +29,15 @@ frontend/
 │   ├── app.css                  couleurs des maquettes (clair / sombre), polices, styles de formulaire
 │   ├── lib/
 │   │   ├── api.ts               appels /api, messages d'erreur en français, fetchMe, safeNext
-│   │   └── components/          composants partagés (Brand…)
+│   │   ├── garmin.svelte.ts     état Garmin du membre et suivi de la synchro (GarminSync)
+│   │   ├── format.ts            dates et durées en français (« il y a 14 min »)
+│   │   └── components/          composants partagés (Brand, SyncButton…)
 │   └── routes/
 │       ├── +layout.ts           ssr = false, prerender = false (mode SPA)
 │       ├── +layout.svelte       polices et CSS globaux
 │       ├── (public)/            pages sans connexion : /login, /invitation/[token]
 │       └── (app)/               pages réservées aux membres ; +layout.ts redirige vers /login sinon
+│           └── settings/        Réglages (pour l'instant : Garmin et données)
 ├── static/
 ├── vite.config.ts               config Vite et SvelteKit (adapter, proxy)
 └── package.json
@@ -45,6 +48,14 @@ frontend/
 - `(app)/+layout.ts` appelle `GET /api/me`. Sans session, il redirige vers `/login?next=<page demandée>`, puis on revient sur cette page après connexion.
 - `/invitation/[token]` vérifie le lien, puis crée le compte. Le nouveau membre est connecté directement.
 - Le cookie de session est `HttpOnly` : le front ne le lit jamais, il sait qu'il est connecté parce que `/api/me` répond.
+
+## Garmin et synchro
+
+- **Réglages › Garmin et données** (`/settings`) : saisie de la clé personnelle et de sa date de fin (facultative), statut de la connexion, fréquence de la synchro auto, alerte quand la clé expire dans moins de 7 jours, changement de clé et déconnexion. Une clé expirée ou refusée affiche le message du back et suspend le bouton.
+- **Bouton Synchroniser** (`SyncButton`, sur l'accueil et dans Réglages) : `POST /api/me/sync` répond 202 avec l'id de la tâche, puis la page interroge `GET /api/jobs/{id}` toutes les 2 s jusqu'à la fin, et recharge l'état Garmin.
+  - Une synchro déjà en cours est retrouvée au chargement (`sync_job_id` dans `GET /api/me/garmin`), par exemple juste après l'enregistrement de la clé.
+  - Si Garmin ne répond pas, la tâche est remise en file par le worker : le bouton s'arrête et l'indique, sans attendre le nouvel essai.
+- La maquette ne montre que l'état « connecté » ; le formulaire de clé reprend ses styles de champs.
 
 ## Conventions
 
