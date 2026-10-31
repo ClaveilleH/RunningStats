@@ -16,7 +16,9 @@ En cas de doute sur une règle métier, se référer à ces docs plutôt qu'impr
 - `backend/` : Python 3.12+, FastAPI, SQLAlchemy 2 (sync, psycopg 3) + Alembic, PostgreSQL. Géré avec **uv**.
   - `app/main.py` (app + routeur `/api`), `app/config.py` (réglages lus depuis le `.env` racine), `app/db.py` (`Base`, session, `get_db`), `app/api/` (un module par groupe de routes), `migrations/` (Alembic), `tests/`.
   - Migrations : `uv run alembic revision --autogenerate -m "..."` puis `uv run alembic upgrade head`.
-- `frontend/` : SvelteKit en **SPA** (adapter-static, pas de SSR), TypeScript. Géré avec **pnpm**.
+- `frontend/` : SvelteKit 3 + Svelte 5 (runes) en **SPA**, TypeScript, ESLint + Prettier. Géré avec **pnpm 10** (épinglé dans `packageManager` ; pnpm 8 refuse d'installer).
+  - Config Vite + SvelteKit dans `vite.config.ts` : adapter-static avec `fallback: 'index.html'`, proxy `/api` → `:8000` en dev.
+  - `src/routes/+layout.ts` : `ssr = false`, `prerender = false`. Alias d'import `#lib/*` → `src/lib/*`.
 - `docker-compose.yml` : PostgreSQL 17 pour le dev, exposé sur le port **5433**.
 - Tâches de fond : un processus worker à part, APScheduler + file dans la table `jobs` (`SELECT … FOR UPDATE SKIP LOCKED`). Pas de Redis.
 
