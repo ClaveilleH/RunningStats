@@ -28,14 +28,28 @@ Les routes qui lancent une tâche longue répondent `202` avec un id de tâche, 
 ```
 backend/
 ├── app/
-│   ├── main.py      app FastAPI, routeur /api
-│   ├── config.py    réglages (DATABASE_URL…), lus depuis ../.env
+│   ├── main.py      app FastAPI, routeur /api, gestion des erreurs métier
+│   ├── config.py    réglages (DATABASE_URL, durées de session…), lus depuis ../.env
 │   ├── db.py        Base des modèles, convention de nommage des contraintes, session, get_db
-│   └── api/         un module par groupe de routes (health pour l'instant)
+│   ├── models/      un fichier par groupe de tables (tous importés dans __init__ pour Alembic)
+│   ├── schemas.py   entrées / sorties Pydantic des routes
+│   ├── security.py  hash argon2, jetons, normalisation d'email
+│   ├── accounts.py  règles d'accès : membres (5 max), invitations, sessions
+│   ├── cli.py       commandes d'administration (create-admin)
+│   └── api/         un module par groupe de routes ; deps.py = session DB, membre connecté, admin
 ├── migrations/      Alembic (env.py lit l'URL depuis app.config)
-├── tests/
+├── tests/           conftest.py crée et migre la base <nom>_test
 └── pyproject.toml   dépendances, config ruff et pytest
 ```
+
+## Connexion et accès
+
+- **Premier compte** : `make admin` (ou `uv run python -m app.cli create-admin`) crée l'admin. Les autres membres arrivent par invitation.
+- **Invitation** : l'admin crée un lien (`POST /api/admin/invitations`), valable 7 jours et utilisable une fois. Le groupe est limité à 5 membres, invitations en attente comprises.
+- **Session** : à la connexion, un jeton aléatoire est posé dans un cookie `HttpOnly`, `SameSite=Lax`, valable 30 jours. `Secure` s'active par `SESSION_COOKIE_SECURE=true` en production.
+- **Stockage** : la base ne garde que le hash SHA-256 des jetons (sessions et invitations), et les mots de passe en argon2. Une copie de la base ne permet donc pas d'ouvrir une session.
+- **Mot de passe** : 10 caractères minimum. Le changer déconnecte les autres appareils.
+- **Dépendances de route** : `CurrentUser` (401 sans session) et `AdminUser` (403 si non admin), dans `app/api/deps.py`.
 
 ## Commandes
 
@@ -48,7 +62,7 @@ uv run alembic revision --autogenerate -m "..."  # nouvelle migration
 uv run alembic upgrade head                      # appliquer
 ```
 
-Les tests utilisent pour l'instant la base de dev : `make db` doit tourner.
+Les tests tournent sur une base à part, `runningstats_test`, créée au besoin et migrée par les vraies migrations Alembic. Les tables sont vidées après chaque test. Le conteneur `db` doit tourner (`make db`).
 
 ## Règles à respecter
 

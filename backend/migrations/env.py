@@ -3,11 +3,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import app.models  # noqa: F401  (enregistre tous les modèles pour l'autogenerate)
 from app.config import get_settings
 from app.db import Base
-
-# Importer ici les modules de modèles pour que l'autogenerate les voie.
-# import app.models  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", get_settings().database_url)

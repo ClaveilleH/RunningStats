@@ -14,7 +14,9 @@ En cas de doute sur une règle métier, se référer à ces docs plutôt qu'impr
 ## Stack
 
 - `backend/` : Python 3.12+, FastAPI, SQLAlchemy 2 (sync, psycopg 3) + Alembic, PostgreSQL. Géré avec **uv**.
-  - `app/main.py` (app + routeur `/api`), `app/config.py` (réglages lus depuis le `.env` racine), `app/db.py` (`Base`, session, `get_db`), `app/api/` (un module par groupe de routes), `migrations/` (Alembic), `tests/`.
+  - `app/main.py` (app + routeur `/api`), `app/config.py` (réglages lus depuis le `.env` racine), `app/db.py` (`Base`, session, `get_db`), `app/models/` (tables, toutes importées dans `__init__`), `app/schemas.py` (Pydantic), `app/api/` (un module par groupe de routes, `deps.py` pour `DbSession` / `CurrentUser` / `AdminUser`), logique métier dans des modules `app/<domaine>.py` (ex. `accounts.py`), `migrations/` (Alembic), `tests/`.
+  - Erreurs métier : lever `AccessError(message_fr, status)` ; les routes restent fines et font le `commit`.
+  - Tests : base `runningstats_test` créée et migrée par `tests/conftest.py`, tables vidées après chaque test.
   - Migrations : `uv run alembic revision --autogenerate -m "..."` puis `uv run alembic upgrade head`.
 - `frontend/` : SvelteKit 3 + Svelte 5 (runes) en **SPA**, TypeScript, ESLint + Prettier. Géré avec **pnpm 10** (épinglé dans `packageManager` ; pnpm 8 refuse d'installer).
   - Config Vite + SvelteKit dans `vite.config.ts` : adapter-static avec `fallback: 'index.html'`, proxy `/api` → `:8000` en dev.

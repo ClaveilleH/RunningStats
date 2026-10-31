@@ -1,4 +1,4 @@
-.PHONY: help install db db-stop api web dev migrate test lint format
+.PHONY: help install db db-stop api web dev migrate admin test lint format
 
 help: ## Liste les commandes
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-10s %s\n", $$1, $$2}'
@@ -26,7 +26,10 @@ dev: db ## Base + API + front en parallèle (Ctrl+C arrête tout)
 migrate: ## Applique les migrations Alembic
 	cd backend && uv run alembic upgrade head
 
-test: ## Tests du back
+admin: ## Crée le compte admin (demande email, nom, mot de passe)
+	cd backend && uv run python -m app.cli create-admin
+
+test: ## Tests du back (base runningstats_test créée au besoin)
 	cd backend && uv run pytest
 
 lint: ## Lint et vérif de types, back et front
