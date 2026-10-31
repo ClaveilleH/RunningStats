@@ -13,9 +13,10 @@ from types import FrameType
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import app.tasks  # noqa: F401  (enregistre les tâches)
-from app import jobs
+from app import jobs, sync_schedule
 from app.config import get_settings
 from app.db import SessionLocal
+from app.security import utcnow
 
 log = logging.getLogger("app.worker")
 
@@ -26,11 +27,33 @@ def _enqueue_unless_queued(type_: str) -> None:
         db.commit()
 
 
+def _enqueue_due_syncs() -> None:
+    with SessionLocal() as db:
+        user_ids = sync_schedule.enqueue_due_syncs(db, utcnow())
+        db.commit()
+    if user_ids:
+        log.info("Synchro automatique lancée pour : %s", user_ids)
+
+
 def build_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone=get_settings().timezone)
     # Doc : maintenance chaque nuit à 3 h.
     scheduler.add_job(
         _enqueue_unless_queued, "cron", hour=3, minute=0, args=["maintenance"], id="maintenance"
+    )
+    # Doc : contrôle des clés Garmin chaque jour à 7 h.
+    scheduler.add_job(
+        _enqueue_unless_queued,
+        "cron",
+        hour=7,
+        minute=0,
+        args=["check_garmin_keys"],
+        id="check_garmin_keys",
+    )
+    # Synchro automatique : toutes les 5 min on regarde quels membres sont dus
+    # (fréquence et pause de nuit dans app_settings, 10 min les jours de course).
+    scheduler.add_job(
+        _enqueue_due_syncs, "interval", minutes=5, id="garmin_sync", next_run_time=utcnow()
     )
     return scheduler
 

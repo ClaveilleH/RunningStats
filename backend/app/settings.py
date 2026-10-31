@@ -37,8 +37,21 @@ class ActivityCategories(SettingModel):
         return self
 
 
+class SyncSchedule(SettingModel):
+    """Synchro Garmin automatique (doc « Besoins du back », tâches de fond)."""
+
+    key: str = "sync_schedule"
+    # Fréquence du groupe ; un membre peut avoir la sienne (users.sync_interval_minutes).
+    interval_minutes: int = Field(default=60, ge=10, le=24 * 60)
+    # Pas de synchro automatique pendant la nuit (heures du fuseau du groupe).
+    night_start_hour: int = Field(default=0, ge=0, le=23)
+    night_end_hour: int = Field(default=6, ge=0, le=23)
+    # Jour d'une course : fréquence pour les inscrits (active quand les courses existeront).
+    race_day_interval_minutes: int = Field(default=10, ge=5, le=24 * 60)
+
+
 REGISTRY: dict[str, type[SettingModel]] = {
-    model.model_fields["key"].default: model for model in (ActivityCategories,)
+    model.model_fields["key"].default: model for model in (ActivityCategories, SyncSchedule)
 }
 
 

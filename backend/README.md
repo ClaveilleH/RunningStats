@@ -66,7 +66,11 @@ backend/
 - **Synchro** (`app/tasks/garmin_sync.py`) :
   1. `garmin_sync` parcourt la liste des activités, des plus récentes aux plus anciennes, et ne garde que `running`, `trail_running` et `track_running`. Tant que l'historique n'a pas été lu en entier (`sync_cursor.history_complete`), elle lit toutes les pages. Ensuite, elle s'arrête à la première activité déjà connue. Chaque page est commitée, donc une synchro coupée reprend sans rien perdre.
   2. Chaque nouvelle activité met en file une tâche `process_activity`. Elle télécharge le FIT, le garde brut dans `DATA_DIR/fit/<membre>/<id Garmin>.zip`, puis enregistre les points (`activity_points`, environ 1 par seconde) et les tours de la montre (`activity_laps`, type `lap`).
-- **Déclenchement** : à l'enregistrement de la clé (`PUT /api/me/garmin` renvoie `sync_job_id`), ou par le bouton de synchro (`POST /api/me/sync`, réponse 202 avec l'id de la tâche). La synchro périodique viendra avec les réglages du groupe.
+- **Déclenchement** :
+  - à l'enregistrement de la clé (`PUT /api/me/garmin` renvoie `sync_job_id`) ;
+  - par le bouton (`POST /api/me/sync`, réponse 202 avec l'id de la tâche) ;
+  - **automatiquement** : toutes les 5 min, le worker regarde quels membres sont dus (`app/sync_schedule.py`). Un membre est dû quand sa fréquence est écoulée (la sienne ou celle du groupe, 1 h par défaut) depuis sa dernière synchro réussie **ou** lancée : une synchro qui échoue n'est donc pas relancée toutes les 5 min. Rien pendant la pause de nuit (0 h – 6 h, fuseau du groupe). Les comptes en statut `error` ou `key_expired` sont suspendus. Le passage à 10 min les jours de course attend les tables des courses.
+- **Clés qui expirent** : la tâche `check_garmin_keys` (chaque jour à 7 h) passe les clés expirées en `key_expired`. La ligne dans le journal admin viendra avec `audit_log`.
 - **Retraitement sans Garmin** : `process_activity` avec `use_local_fit: true` relit le FIT gardé sur disque.
 
 ## Calculs sur les activités (`app/metrics.py`)
@@ -88,7 +92,7 @@ Lancés à la fin de `process_activity`, et pour toutes les activités par la t�
 
 - Table `app_settings` : une ligne par réglage, avec une valeur JSON. Chaque réglage est un modèle Pydantic dont les valeurs par défaut viennent de la doc ; la base ne garde que ce que l'admin a changé.
 - `GET /api/admin/settings` renvoie tout, valeurs par défaut comprises. `PUT /api/admin/settings` modifie un réglage en partie, après validation (seuils dans le bon ordre, champs connus).
-- Réglage existant pour l'instant : `activity_categories` (route < 10 m/km, trail ≥ 25 m/km, trail long ≥ 42 km-effort).
+- Réglages existants : `activity_categories` (route < 10 m/km, trail ≥ 25 m/km, trail long ≥ 42 km-effort) et `sync_schedule` (toutes les 60 min, pause de 0 h à 6 h, 10 min les jours de course).
 - À ne pas confondre avec `app/config.py`, qui contient la configuration technique lue dans l'environnement.
 - **Tests** : faux Garmin dans `tests/garmin_fakes.py` (liste d'activités, FIT synthétiques générés avec `fit-tool`, erreurs HTTP à la demande). Aucun appel réseau.
 
