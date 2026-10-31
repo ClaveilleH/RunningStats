@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import activities, fit, garmin, metrics
-from app.jobs import GARMIN_RETRY_DELAYS, RetryableError, enqueue, task
+from app.jobs import GARMIN_RETRY_DELAYS, RetryableError, enqueue, enqueue_unless_queued, task
 from app.models import Activity, GarminAccount, GarminStatus, Job
 from app.security import utcnow
 
@@ -92,6 +92,8 @@ def garmin_sync(db: Session, job: Job) -> None:
     account.last_sync_at = utcnow()
     account.status = GarminStatus.ok
     account.last_error = None
+    # La santé suit dans une tâche à part : un échec n'annule pas les activités.
+    enqueue_unless_queued(db, "garmin_health", user_id=user_id)
     log.info("Synchro du membre %s : %s nouvelle(s) activité(s)", user_id, added)
 
 

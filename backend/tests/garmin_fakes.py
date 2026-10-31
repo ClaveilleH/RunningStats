@@ -2,7 +2,7 @@
 
 import io
 import zipfile
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fit_tool.fit_file_builder import FitFileBuilder
@@ -117,6 +117,13 @@ class FakeGarminApi:
         self.search_calls: list[int] = []
         self.downloads: list[int] = []
         self.errors: list[int] = []  # codes HTTP à renvoyer aux prochains appels
+        # Santé, par date ISO ; health_calls garde (méthode, début, fin) de chaque appel.
+        self.nights: dict[str, dict[str, Any]] = {}
+        self.days: dict[str, dict[str, Any]] = {}
+        self.weighings: list[dict[str, Any]] = []
+        self.hrv: dict[str, dict[str, Any]] = {}
+        self.health_calls: list[tuple[str, date, date]] = []
+        self.health_limit: int | None = None  # HTTP 429 au-delà de ce nombre d'appels santé
 
     def _maybe_fail(self, path: str) -> None:
         if self.errors:
@@ -141,5 +148,66 @@ class FakeClient:
         self.api.downloads.append(int(activity_id))
         return self.api.fits.get(int(activity_id)) or build_fit()
 
+    def _health(self, name: str, start: date, end: date, items: dict[str, Any]) -> list[Any]:
+        self.api._maybe_fail(f"/{name}")
+        if (
+            self.api.health_limit is not None
+            and len(self.api.health_calls) >= self.api.health_limit
+        ):
+            raise HttpError(status_code=429, method="GET", url=f"/{name}", response_text="")
+        self.api.health_calls.append((name, start, end))
+        return [
+            v for d, v in sorted(items.items()) if start.isoformat() <= d[:10] <= end.isoformat()
+        ]
+
+    def get_daily_sleep_summaries(self, start: date, end: date) -> list[Any]:
+        return self._health("sleep", start, end, self.api.nights)
+
+    def get_daily_summaries(self, start: date, end: date) -> dict[str, Any]:
+        return {"data": self._health("summaries", start, end, self.api.days)}
+
+    def get_daily_hrv_summaries(self, start: date, end: date) -> Any:
+        items = self._health("hrv", start, end, self.api.hrv)
+        return {"hrvSummaries": items} if items else None  # Garmin : None sans VFC
+
+    def get_weight_measurements(self, start: date, end: date) -> dict[str, Any]:
+        weighings = {f"{w['calendarDate']}#{w['samplePk']}": w for w in self.api.weighings}
+        samples = self._health("weight", start, end, weighings)
+        return {"dailyWeightSummaries": [{"allWeightMetrics": samples}] if samples else []}
+
     def close(self) -> None:
         pass
+
+
+def night(day: str, total_s: int = 27000, score: int | None = 80) -> dict[str, Any]:
+    return {
+        "calendarDate": day,
+        "sleepTimeSeconds": total_s,
+        "deepSleepSeconds": 5400,
+        "lightSleepSeconds": 14400,
+        "remSleepSeconds": 7200,
+        "awakeSleepSeconds": 600,
+        "sleepStartTimestampGMT": 1792794780000,
+        "sleepEndTimestampGMT": 1792820160000,
+        "avgHeartRate": None,
+        "sleepScores": {"overall": {"value": score, "qualifierKey": "GOOD"}},
+    }
+
+
+def daily_summary(day: str, steps: int = 9000, resting_hr: int = 50) -> dict[str, Any]:
+    return {
+        "calendarDate": day,
+        "movement": {"steps": {"goal": 9000, "value": steps}},
+        "heartRate": {"minValue": 45, "maxValue": 150, "restingValue": resting_hr},
+        "bodyBattery": {"minValue": 15, "maxValue": 80, "latestValue": 20},
+    }
+
+
+def weighing(sample_id: int, day: str, grams: float = 70500.0) -> dict[str, Any]:
+    return {
+        "samplePk": sample_id,
+        "calendarDate": day,
+        "timestampGMT": 1792794780000,
+        "weight": grams,
+        "sourceType": "MANUAL",
+    }

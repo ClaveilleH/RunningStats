@@ -3,6 +3,7 @@
 from app.models.activity import Activity, ActivityLap, ActivityPoint, LapKind
 from app.models.app_setting import AppSetting
 from app.models.garmin import GarminAccount, GarminSource, GarminStatus
+from app.models.health import DailyHealth, SleepNight, Weight
 from app.models.invitation import Invitation
 from app.models.job import Job, JobStatus
 from app.models.session import UserSession
@@ -17,6 +18,9 @@ __all__ = [
     "GarminAccount",
     "GarminSource",
     "GarminStatus",
+    "DailyHealth",
+    "SleepNight",
+    "Weight",
     "Invitation",
     "Job",
     "JobStatus",

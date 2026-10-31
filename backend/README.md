@@ -66,6 +66,25 @@ backend/
 - **Synchro** (`app/tasks/garmin_sync.py`) :
   1. `garmin_sync` parcourt la liste des activités, des plus récentes aux plus anciennes, et ne garde que `running`, `trail_running` et `track_running`. Tant que l'historique n'a pas été lu en entier (`sync_cursor.history_complete`), elle lit toutes les pages. Ensuite, elle s'arrête à la première activité déjà connue. Chaque page est commitée, donc une synchro coupée reprend sans rien perdre.
   2. Chaque nouvelle activité met en file une tâche `process_activity`. Elle télécharge le FIT, le garde brut dans `DATA_DIR/fit/<membre>/<id Garmin>.zip`, puis enregistre les points (`activity_points`, environ 1 par seconde) et les tours de la montre (`activity_laps`, type `lap`).
+  3. À la fin, `garmin_sync` met en file `garmin_health` (`app/tasks/garmin_health.py`, conversion dans `app/health.py`). C'est une tâche à part : si elle échoue, les activités sont quand même gardées.
+- **Santé** :
+  - Tables :
+    - `sleep_nights` : une nuit par date de réveil, avec les durées par phase, le score et le JSON brut ;
+    - `daily_health` : pas, FC au repos, Body Battery min / max et VFC ;
+    - `weights` : une ligne par pesée Garmin, en kg (Garmin envoie des grammes).
+  - Lecture : tout l'historique la première fois (depuis la première activité, ou un an s'il n'y en a pas), puis les 3 derniers jours, comme le prévoit la doc. Si le worker a été arrêté, la lecture reprend depuis la dernière date lue (`sync_cursor.health_until`).
+  - Limites de Garmin pour un appel, mesurées le 31/10/2026 :
+
+    | Appel | Période max |
+    |---|---|
+    | sommeil | 31 jours |
+    | résumés du jour (pas, FC au repos, Body Battery) | 366 jours |
+    | VFC, poids | longues périodes acceptées |
+
+  - L'appel « pas » (28 jours max) n'est pas utilisé : les pas sont déjà dans les résumés du jour.
+  - Garmin répond HTTP 429 au-delà d'environ 100 appels par minute. L'historique est donc lu par tranches d'un an (environ 15 appels), chacune enregistrée tout de suite ; après une erreur 429, la tâche réessaie et reprend à la tranche suivante.
+  - VFC : la montre testée n'en fournit pas (Garmin renvoie `null`). Le format lu (`hrvSummaries[].lastNightAvg`) est donc supposé, et `hrv_ms` reste vide sinon.
+  - L'enregistrement est un upsert : une valeur absente ne vient pas effacer une valeur connue.
 - **Déclenchement** :
   - à l'enregistrement de la clé (`PUT /api/me/garmin` renvoie `sync_job_id`) ;
   - par le bouton (`POST /api/me/sync`, réponse 202 avec l'id de la tâche) ;

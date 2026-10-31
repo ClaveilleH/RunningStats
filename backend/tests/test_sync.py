@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -21,30 +21,6 @@ from app.models import (
 from app.security import utcnow
 from app.tasks import garmin_sync as sync_module
 from tests.garmin_fakes import FakeGarminApi, build_fit, summary
-
-
-@pytest.fixture
-def api(monkeypatch: pytest.MonkeyPatch) -> FakeGarminApi:
-    fake = FakeGarminApi()
-    monkeypatch.setattr(garmin, "GarminPersonalApiClient", fake.client)
-    monkeypatch.setattr(garmin, "_throttle", lambda: None)
-    monkeypatch.setattr(garmin, "_request_token", lambda key: _jwt())
-    return fake
-
-
-def _jwt() -> str:
-    from tests.test_garmin import fake_jwt
-
-    return fake_jwt(utcnow() + timedelta(hours=24))
-
-
-@pytest.fixture
-def account(db: Session, admin: User) -> GarminAccount:
-    account = GarminAccount(user_id=admin.id, api_key_encrypted=crypto.encrypt("key"))
-    garmin.store_token(account, "token", utcnow() + timedelta(hours=10))
-    db.add(account)
-    db.commit()
-    return account
 
 
 def sync(db: Session, user: User) -> int:
@@ -140,7 +116,7 @@ def test_first_sync_keeps_only_running_types_across_pages(
     assert api.search_calls == [0, 2, 4]
     assert sorted(db.scalars(select(Activity.garmin_id))) == [1, 3, 5]
     db.refresh(account)
-    assert account.sync_cursor == {"history_complete": True}
+    assert account.sync_cursor["history_complete"] is True
     assert account.last_sync_at is not None
     # Une tâche de traitement par activité gardée.
     pending = db.scalars(select(Job).where(Job.type == "process_activity")).all()
