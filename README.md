@@ -37,17 +37,50 @@ Le port 5433 évite un conflit avec un autre PostgreSQL local sur le 5432 ; il s
 
 - Docker avec Docker Compose
 - [uv](https://docs.astral.sh/uv/) (installe lui-même Python 3.12)
-- Node.js 20.19 ou plus
-- pnpm 10 (`npm i -g pnpm@10`) ; pnpm 8 refuse d'installer les dépendances
+- Node.js 22.17 minimum dans la branche 22.x, ou 24+ (SvelteKit 3 ne supporte pas Node 20)
+- pnpm 10 (`npm i -g pnpm@10.34.9`), version épinglée dans `frontend/package.json`
+
+`make install` installe les dépendances du projet, mais suppose ces outils déjà disponibles dans le `PATH`.
+Sur Linux/macOS, si `uv` manque :
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Installer ensuite pnpm avec la commande ci-dessus, puis lancer `make doctor` pour vérifier les outils et la version de Node.
 
 ## Démarrage
 
 ```bash
 make install   # .env + dépendances back et front
-make dev       # base + API + front ; ouvrir http://localhost:5173
+make admin     # une seule fois : base + migrations, puis création du premier compte
+make dev       # base + migrations + API + worker + front ; ouvrir http://localhost:5173
 ```
 
+Se connecter avec le compte créé par `make admin`. Le site est privé : il n'existe pas de formulaire d'inscription libre.
+Les lancements suivants ne nécessitent que `make dev` ; les migrations sont appliquées avant le démarrage du worker et de l'API.
+
+Avant de connecter Garmin dans les réglages, générer la clé maître depuis la racine :
+
+```bash
+uv run --project backend python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Copier la valeur dans `GARMIN_ENCRYPTION_KEY` du `.env`, puis redémarrer `make dev`.
+Conserver cette clé : la remplacer rend illisibles les clés Garmin déjà enregistrées. Elle n'est pas nécessaire pour lancer le site et se connecter.
+
 `make help` liste les autres commandes (`test`, `lint`, `format`, `migrate`, `db-stop`…).
+
+## Dépannage du premier lancement
+
+| Symptôme | Cause et action |
+| --- | --- |
+| `uv: command not found` ou `pnpm: command not found` | Installer l'outil manquant et vérifier le `PATH` avec `make doctor`. |
+| `ERR_PNPM_UNSUPPORTED_ENGINE` | Vérifier Node (22.17+ en 22.x, ou 24+) et pnpm (`10.34.9`). |
+| `relation "jobs" does not exist` ou `relation "users" does not exist` | Base non migrée ; lancer `make migrate`. `make dev` et `make admin` le font automatiquement. |
+| Page de connexion sans compte utilisable | Lancer `make admin` dans un terminal à la racine. |
+| `GARMIN_ENCRYPTION_KEY n'est pas définie` | Renseigner la clé maître comme indiqué ci-dessus, puis redémarrer API et worker. |
 
 ## Conception
 

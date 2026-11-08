@@ -96,6 +96,8 @@ Les pages à construire suivent les [maquettes](https://claude.ai/artifact/MAHSw
 
 ## Commandes
 
+Prérequis : Node.js 22.17+ dans la branche 22.x, ou 24+, et pnpm 10.34.9 (voir `packageManager`).
+
 ```bash
 pnpm install
 pnpm dev          # :5173, API attendue sur :8000
